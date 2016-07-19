@@ -111,6 +111,8 @@ class WP_Object_Cache {
 	var $cache_enabled = true;
 	var $default_expiration = 0;
 
+	var $stats_callback = null;
+
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
 
@@ -369,6 +371,10 @@ class WP_Object_Cache {
 	}
 
 	function stats() {
+		if ( $this->stats_callback && is_callable( $this->stats_callback ) ) {
+			return call_user_func( $this->stats_callback );
+		}
+
 		echo "<p>\n";
 		foreach ( $this->stats as $stat => $n ) {
 			echo "<strong>$stat</strong> $n";
