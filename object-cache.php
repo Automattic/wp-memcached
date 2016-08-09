@@ -110,6 +110,15 @@ class WP_Object_Cache {
 
 	var $cache_enabled = true;
 	var $default_expiration = 0;
+	
+	function WP_Object_Cache() {
+		$this->stats = [
+			'add' => 0,
+			'delete' => 0,
+			'get' => 0,
+			'get_multi' => 0,
+		];
+	}
 
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
@@ -454,4 +463,3 @@ class WP_Object_Cache {
 		$this->cache_misses =& $this->stats['add'];
 	}
 }
-?>
