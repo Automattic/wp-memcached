@@ -405,6 +405,9 @@ class WP_Object_Cache {
 		$mc     =& $this->get_mc( $group );
 		$result = $mc->set( $key, $data, false, $expire );
 
+		@ ++$this->stats[ 'set' ];
+		$this->group_ops[$group][] = "set $id";
+
 		return $result;
 	}
 
