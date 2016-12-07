@@ -492,11 +492,11 @@ class WP_Object_Cache {
 
 	function __construct() {
 		$this->stats = array(
-			'get' => 0,
-			'get_multi' => 0,
-			'add' => 0,
-			'set' => 0,
-			'delete' => 0,
+			'get'        => 0,
+			'get_multi'  => 0,
+			'add'        => 0,
+			'set'        => 0,
+			'delete'     => 0,
 		);
 
 		global $memcached_servers;
