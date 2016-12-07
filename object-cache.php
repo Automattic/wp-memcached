@@ -137,7 +137,7 @@ class WP_Object_Cache {
 		$result = $mc->add( $key, $data, false, $expire );
 
 		if ( false !== $result ) {
-			@ ++$this->stats['add'];
+			++$this->stats['add'];
 
 			$this->group_ops[ $group ][] = "add $id";
 			$this->cache[ $key ]         = $data;
@@ -201,7 +201,7 @@ class WP_Object_Cache {
 
 		$result = $mc->delete( $key );
 
-		@ ++$this->stats['delete'];
+		++$this->stats['delete'];
 
 		$this->group_ops[ $group ][] = "delete $id";
 
@@ -261,7 +261,7 @@ class WP_Object_Cache {
 			$this->cache[ $key ] = $value;
 		}
 
-		@ ++$this->stats['get'];
+		++$this->stats['get'];
 
 		$this->group_ops[ $group ][] = "get $id";
 
@@ -310,7 +310,7 @@ class WP_Object_Cache {
 			}
 		}
 
-		@ ++$this->stats['get_multi'];
+		++$this->stats['get_multi'];
 
 		$this->group_ops[ $group ][] = "get_multi $id";
 
@@ -405,7 +405,7 @@ class WP_Object_Cache {
 		$mc     =& $this->get_mc( $group );
 		$result = $mc->set( $key, $data, false, $expire );
 
-		@ ++$this->stats[ 'set' ];
+		++$this->stats[ 'set' ];
 		$this->group_ops[$group][] = "set $id";
 
 		return $result;
