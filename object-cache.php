@@ -117,6 +117,8 @@ class WP_Object_Cache {
 
 	var $stats_callback = null;
 
+	var $connection_errors = array();
+
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
@@ -488,7 +490,10 @@ class WP_Object_Cache {
 	}
 
 	function failure_callback( $host, $port ) {
-		// error_log("Connection failure for $host:$port\n", 3, '/tmp/memcached.txt');
+		$this->connection_errors[] = array(
+			'host' => $host,
+			'port' => $port,
+		);
 	}
 
 	function salt_keys( $key_salt ) {
