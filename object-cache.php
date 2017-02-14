@@ -136,7 +136,7 @@ class WP_Object_Cache {
 
 		$mc =& $this->get_mc( $group );
 
-		$expire = absint( $expire );
+		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
@@ -408,7 +408,7 @@ class WP_Object_Cache {
 			return true;
 		}
 
-		$expire = absint( $expire );
+		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
