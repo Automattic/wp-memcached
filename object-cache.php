@@ -375,7 +375,12 @@ class WP_Object_Cache {
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
 		$key    = $this->key( $id, $group );
-		$expire = ( 0 == $expire ) ? $this->default_expiration : $expire;
+
+		$expire = intval( $expire );
+		if ( 0 === $expire || $expire > $this->max_expiration ) {
+			$expire = $this->default_expiration;
+		}
+
 		$mc     =& $this->get_mc( $group );
 
 		if ( is_object( $data ) ) {
