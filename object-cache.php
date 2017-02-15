@@ -113,7 +113,7 @@ class WP_Object_Cache {
 
 	var $cache_enabled      = true;
 	var $default_expiration = 0;
-	var $max_expiration     = 30 * DAY_IN_SECONDS;
+	var $max_expiration     = 2592000; // 30 days
 
 	var $stats_callback = null;
 
