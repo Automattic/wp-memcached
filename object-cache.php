@@ -113,7 +113,7 @@ class WP_Object_Cache {
 
 	var $cache_enabled      = true;
 	var $default_expiration = 0;
-	var $max_expiration     = 30 * DAY_IN_SECONDS;
+	var $max_expiration     = 2592000; // 30 days
 
 	var $stats_callback = null;
 
@@ -136,7 +136,7 @@ class WP_Object_Cache {
 
 		$mc =& $this->get_mc( $group );
 
-		$expire = absint( $expire );
+		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
@@ -375,7 +375,12 @@ class WP_Object_Cache {
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
 		$key    = $this->key( $id, $group );
-		$expire = ( 0 == $expire ) ? $this->default_expiration : $expire;
+
+		$expire = intval( $expire );
+		if ( 0 === $expire || $expire > $this->max_expiration ) {
+			$expire = $this->default_expiration;
+		}
+
 		$mc     =& $this->get_mc( $group );
 
 		if ( is_object( $data ) ) {
@@ -408,7 +413,7 @@ class WP_Object_Cache {
 			return true;
 		}
 
-		$expire = absint( $expire );
+		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
