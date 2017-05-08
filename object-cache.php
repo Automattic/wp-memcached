@@ -148,6 +148,13 @@ class WP_Object_Cache {
 
 			$this->group_ops[ $group ][] = "add $id";
 			$this->cache[ $key ]         = $data;
+		} else if ( false === $result && true === isset( $this->cache[$key] ) && false === $this->cache[$key] ) {
+			/*
+			 * Here we unset local cache if remote add failed and local cache value is equal to `false` in order
+			 * to update the local cache anytime we get a new information from remote server. This way, the next
+			 * cache get will go to remote server and will fetch recent data.
+			 */
+			unset( $this->cache[$key] );
 		}
 
 		return $result;
