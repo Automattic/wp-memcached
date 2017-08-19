@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "81ff4fd6aed1d08f491e16f206291a67",
+    "content-hash": "30d16e2aef30b09fea6c6c062175bcb2",
     "packages": [],
     "packages-dev": [
         {
@@ -138,6 +138,51 @@
                 "wordpress"
             ],
             "time": "2017-08-05T16:08:58+00:00"
+        },
+        {
+            "name": "wpreadme2markdown/wpreadme2markdown",
+            "version": "3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/wpreadme2markdown/wp-readme-to-markdown.git",
+                "reference": "50c4a56503cd26b48c28fad19be281b948b8c2e0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/wpreadme2markdown/wp-readme-to-markdown/zipball/50c4a56503cd26b48c28fad19be281b948b8c2e0",
+                "reference": "50c4a56503cd26b48c28fad19be281b948b8c2e0",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">= 5.3.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "WPReadme2Markdown\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Benjamin J. Balter"
+                },
+                {
+                    "name": "Christian Archer",
+                    "email": "sunchaser@sunchaser.info"
+                }
+            ],
+            "description": "Convert WordPress Plugin readme.txt to Markdown",
+            "keywords": [
+                "converter",
+                "markdown",
+                "readme",
+                "wordpress"
+            ],
+            "time": "2017-08-06T04:42:13+00:00"
         }
     ],
     "aliases": [],
