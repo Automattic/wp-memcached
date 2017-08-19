@@ -15,6 +15,8 @@
  * License: GPLv3 or later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
  * Version: 3.0.1
+ * GitHub Plugin URI: https://github.com/Automattic/wp-memcached
+ * GitHub Branch: master
  *
  * Instructions: Install this file to wp-content/object-cache.php.
  */
