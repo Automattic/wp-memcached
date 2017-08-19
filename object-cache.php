@@ -1,4 +1,8 @@
 <?php
+/**
+* Memcache
+*
+*/
 
 /*
 Plugin Name: Memcached
@@ -16,60 +20,143 @@ if ( ! defined( 'WP_CACHE_KEY_SALT' ) ) {
 	define( 'WP_CACHE_KEY_SALT', '' );
 }
 
+/**
+ * WP Cache Add.
+ *
+ * @access public
+ * @param mixed  $key Key.
+ * @param mixed  $data Data.
+ * @param string $group (default: '') Group.
+ * @param int    $expire (default: 0) Expire.
+ * @return void
+ */
 function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->add( $key, $data, $group, $expire );
 }
 
+/**
+ * wp_cache_incr function.
+ *
+ * @access public
+ * @param mixed  $key Key.
+ * @param int    $n (default: 1)
+ * @param string $group (default: '') Group.
+ * @return void
+ */
 function wp_cache_incr( $key, $n = 1, $group = '' ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->incr( $key, $n, $group );
 }
 
+/**
+ * wp_cache_decr function.
+ *
+ * @access public
+ * @param mixed  $key
+ * @param int    $n (default: 1)
+ * @param string $group (default: '')
+ * @return void
+ */
 function wp_cache_decr( $key, $n = 1, $group = '' ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->decr( $key, $n, $group );
 }
 
+/**
+ * wp_cache_close function.
+ *
+ * @access public
+ * @return void
+ */
 function wp_cache_close() {
 	global $wp_object_cache;
 
 	return $wp_object_cache->close();
 }
 
+/**
+ * wp_cache_delete function.
+ *
+ * @access public
+ * @param mixed  $key
+ * @param string $group (default: '')
+ * @return void
+ */
 function wp_cache_delete( $key, $group = '' ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->delete( $key, $group );
 }
 
+/**
+ * wp_cache_flush function.
+ *
+ * @access public
+ * @return void
+ */
 function wp_cache_flush() {
 	global $wp_object_cache;
 
 	return $wp_object_cache->flush();
 }
 
+/**
+ * wp_cache_get function.
+ *
+ * @access public
+ * @param mixed  $key
+ * @param string $group (default: '')
+ * @param bool   $force (default: false)
+ * @return void
+ */
 function wp_cache_get( $key, $group = '', $force = false ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->get( $key, $group, $force );
 }
 
+/**
+ * wp_cache_init function.
+ *
+ * @access public
+ * @return void
+ */
 function wp_cache_init() {
 	global $wp_object_cache;
 
 	$wp_object_cache = new WP_Object_Cache();
 }
 
+/**
+ * wp_cache_replace function.
+ *
+ * @access public
+ * @param mixed  $key
+ * @param mixed  $data
+ * @param string $group (default: '')
+ * @param int    $expire (default: 0)
+ * @return void
+ */
 function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->replace( $key, $data, $group, $expire );
 }
 
+/**
+ * wp_cache_set function.
+ *
+ * @access public
+ * @param mixed  $key
+ * @param mixed  $data
+ * @param string $group (default: '')
+ * @param int    $expire (default: 0)
+ * @return void
+ */
 function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
@@ -80,45 +167,190 @@ function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
 	}
 }
 
+/**
+ * wp_cache_switch_to_blog function.
+ *
+ * @access public
+ * @param mixed $blog_id
+ * @return void
+ */
 function wp_cache_switch_to_blog( $blog_id ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->switch_to_blog( $blog_id );
 }
 
+/**
+ * wp_cache_add_global_groups function.
+ *
+ * @access public
+ * @param mixed $groups
+ * @return void
+ */
 function wp_cache_add_global_groups( $groups ) {
 	global $wp_object_cache;
 
 	$wp_object_cache->add_global_groups( $groups );
 }
 
+/**
+ * wp_cache_add_non_persistent_groups function.
+ *
+ * @access public
+ * @param mixed $groups
+ * @return void
+ */
 function wp_cache_add_non_persistent_groups( $groups ) {
 	global $wp_object_cache;
 
 	$wp_object_cache->add_non_persistent_groups( $groups );
 }
 
+/**
+ * WP_Object_Cache class.
+ */
 class WP_Object_Cache {
+
+	/**
+	 * global_groups
+	 *
+	 * (default value: array( 'WP_Object_Cache_global' ))
+	 *
+	 * @var string
+	 * @access public
+	 */
 	var $global_groups = array( 'WP_Object_Cache_global' );
 
+	/**
+	 * no_mc_groups
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
 	var $no_mc_groups = array();
 
-	var $cache     = array();
-	var $mc        = array();
-	var $stats     = array();
+	/**
+	 * cache
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
+	var $cache = array();
+
+	/**
+	 * mc
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
+	var $mc = array();
+
+	/**
+	 * stats
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
+	var $stats = array();
+
+	/**
+	 * group_ops
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
 	var $group_ops = array();
 
-	var $flush_number        = array();
+	/**
+	 * flush_number
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
+	var $flush_number = array();
+
+	/**
+	 * global_flush_number
+	 *
+	 * (default value: null)
+	 *
+	 * @var mixed
+	 * @access public
+	 */
 	var $global_flush_number = null;
 
-	var $cache_enabled      = true;
-	var $default_expiration = 0;
-	var $max_expiration     = 2592000; // 30 days
+	/**
+	 * cache_enabled
+	 *
+	 * (default value: true)
+	 *
+	 * @var bool
+	 * @access public
+	 */
+	var $cache_enabled = true;
 
+	/**
+	 * default_expiration
+	 *
+	 * (default value: 0)
+	 *
+	 * @var int
+	 * @access public
+	 */
+	var $default_expiration = 0;
+
+	/**
+	 * max_expiration
+	 *
+	 * (default value: 2592000)
+	 *
+	 * @var int
+	 * @access public
+	 */
+	var $max_expiration = 2592000; // 30 days
+
+	/**
+	 * stats_callback
+	 *
+	 * (default value: null)
+	 *
+	 * @var mixed
+	 * @access public
+	 */
 	var $stats_callback = null;
 
+	/**
+	 * connection_errors
+	 *
+	 * (default value: array())
+	 *
+	 * @var array
+	 * @access public
+	 */
 	var $connection_errors = array();
 
+	/**
+	 * add function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param mixed  $data
+	 * @param string $group (default: 'default')
+	 * @param int    $expire (default: 0)
+	 * @return void
+	 */
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
@@ -148,18 +380,26 @@ class WP_Object_Cache {
 
 			$this->group_ops[ $group ][] = "add $id";
 			$this->cache[ $key ]         = $data;
-		} else if ( false === $result && true === isset( $this->cache[$key] ) && false === $this->cache[$key] ) {
+		} elseif ( false === $result && true === isset( $this->cache[ $key ] ) && false === $this->cache[ $key ] ) {
+
 			/*
 			 * Here we unset local cache if remote add failed and local cache value is equal to `false` in order
 			 * to update the local cache anytime we get a new information from remote server. This way, the next
 			 * cache get will go to remote server and will fetch recent data.
 			 */
-			unset( $this->cache[$key] );
+			unset( $this->cache[ $key ] );
 		}
 
 		return $result;
 	}
 
+	/**
+	 * add_global_groups function.
+	 *
+	 * @access public
+	 * @param mixed $groups
+	 * @return void
+	 */
 	function add_global_groups( $groups ) {
 		if ( ! is_array( $groups ) ) {
 			$groups = (array) $groups;
@@ -169,6 +409,13 @@ class WP_Object_Cache {
 		$this->global_groups = array_unique( $this->global_groups );
 	}
 
+	/**
+	 * add_non_persistent_groups function.
+	 *
+	 * @access public
+	 * @param mixed $groups
+	 * @return void
+	 */
 	function add_non_persistent_groups( $groups ) {
 		if ( ! is_array( $groups ) ) {
 			$groups = (array) $groups;
@@ -178,6 +425,15 @@ class WP_Object_Cache {
 		$this->no_mc_groups = array_unique( $this->no_mc_groups );
 	}
 
+	/**
+	 * incr function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param int    $n (default: 1)
+	 * @param string $group (default: 'default')
+	 * @return void
+	 */
 	function incr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
@@ -187,6 +443,15 @@ class WP_Object_Cache {
 		return $this->cache[ $key ];
 	}
 
+	/**
+	 * decr function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param int    $n (default: 1)
+	 * @param string $group (default: 'default')
+	 * @return void
+	 */
 	function decr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
@@ -196,12 +461,26 @@ class WP_Object_Cache {
 		return $this->cache[ $key ];
 	}
 
+	/**
+	 * close function.
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function close() {
 		foreach ( $this->mc as $bucket => $mc ) {
 			$mc->close();
 		}
 	}
 
+	/**
+	 * delete function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param string $group (default: 'default')
+	 * @return void
+	 */
 	function delete( $id, $group = 'default' ) {
 		$key = $this->key( $id, $group );
 
@@ -226,6 +505,12 @@ class WP_Object_Cache {
 		return $result;
 	}
 
+	/**
+	 * flush function.
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function flush() {
 		// Do not use the memcached flush method. It acts on an
 		// entire memcached server, affecting all sites.
@@ -241,18 +526,39 @@ class WP_Object_Cache {
 		}
 	}
 
+	/**
+	 * rotate_site_keys function.
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function rotate_site_keys() {
 		$this->add( 'flush_number', intval( microtime( true ) * 1e6 ), 'WP_Object_Cache' );
 
 		$this->flush_number[ $this->blog_prefix ] = $this->incr( 'flush_number', 1, 'WP_Object_Cache' );
 	}
 
+	/**
+	 * rotate_global_keys function.
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function rotate_global_keys() {
 		$this->add( 'flush_number', intval( microtime( true ) * 1e6 ), 'WP_Object_Cache_global' );
 
 		$this->global_flush_number = $this->incr( 'flush_number', 1, 'WP_Object_Cache_global' );
 	}
 
+	/**
+	 * get function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param string $group (default: 'default')
+	 * @param bool   $force (default: false)
+	 * @return void
+	 */
 	function get( $id, $group = 'default', $force = false ) {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
@@ -263,7 +569,7 @@ class WP_Object_Cache {
 			} else {
 				$value = $this->cache[ $key ];
 			}
-		} else if ( in_array( $group, $this->no_mc_groups ) ) {
+		} elseif ( in_array( $group, $this->no_mc_groups ) ) {
 			$this->cache[ $key ] = $value = false;
 		} else {
 			$value = $mc->get( $key );
@@ -288,6 +594,13 @@ class WP_Object_Cache {
 		return $value;
 	}
 
+	/**
+	 * get_multi function.
+	 *
+	 * @access public
+	 * @param mixed $groups
+	 * @return void
+	 */
 	function get_multi( $groups ) {
 		/*
 		format: $get['group-name'] = array( 'key1', 'key2' );
@@ -308,7 +621,7 @@ class WP_Object_Cache {
 					}
 
 					continue;
-				} else if ( in_array( $group, $this->no_mc_groups ) ) {
+				} elseif ( in_array( $group, $this->no_mc_groups ) ) {
 					$return[ $key ] = false;
 
 					continue;
@@ -333,6 +646,13 @@ class WP_Object_Cache {
 		return $return;
 	}
 
+	/**
+	 * flush_prefix function.
+	 *
+	 * @access public
+	 * @param mixed $group
+	 * @return void
+	 */
 	function flush_prefix( $group ) {
 		if ( 'WP_Object_Cache' === $group || 'WP_Object_Cache_global' === $group ) {
 			// Never flush the flush numbers.
@@ -362,6 +682,14 @@ class WP_Object_Cache {
 		return $number . ':';
 	}
 
+	/**
+	 * key function.
+	 *
+	 * @access public
+	 * @param mixed $key
+	 * @param mixed $group
+	 * @return void
+	 */
 	function key( $key, $group ) {
 		if ( empty( $group ) ) {
 			$group = 'default';
@@ -380,6 +708,16 @@ class WP_Object_Cache {
 		return preg_replace( '/\s+/', '', "$prefix:$group:$key" );
 	}
 
+	/**
+	 * replace function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param mixed  $data
+	 * @param string $group (default: 'default')
+	 * @param int    $expire (default: 0)
+	 * @return void
+	 */
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
 		$key    = $this->key( $id, $group );
 
@@ -403,6 +741,16 @@ class WP_Object_Cache {
 		return $result;
 	}
 
+	/**
+	 * set function.
+	 *
+	 * @access public
+	 * @param mixed  $id
+	 * @param mixed  $data
+	 * @param string $group (default: 'default')
+	 * @param int    $expire (default: 0)
+	 * @return void
+	 */
 	function set( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
@@ -428,12 +776,19 @@ class WP_Object_Cache {
 		$mc     =& $this->get_mc( $group );
 		$result = $mc->set( $key, $data, false, $expire );
 
-		++$this->stats[ 'set' ];
-		$this->group_ops[$group][] = "set $id";
+		++$this->stats['set'];
+		$this->group_ops[ $group ][] = "set $id";
 
 		return $result;
 	}
 
+	/**
+	 * switch_to_blog function.
+	 *
+	 * @access public
+	 * @param mixed $blog_id
+	 * @return void
+	 */
 	function switch_to_blog( $blog_id ) {
 		global $table_prefix;
 
@@ -442,6 +797,13 @@ class WP_Object_Cache {
 		$this->blog_prefix = ( is_multisite() ? $blog_id : $table_prefix );
 	}
 
+	/**
+	 * colorize_debug_line function.
+	 *
+	 * @access public
+	 * @param mixed $line
+	 * @return void
+	 */
 	function colorize_debug_line( $line ) {
 		$colors = array(
 			'get' => 'green',
@@ -457,6 +819,12 @@ class WP_Object_Cache {
 		return $cmd2 . substr( $line, strlen( $cmd ) ) . "\n";
 	}
 
+	/**
+	 * stats function.
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function stats() {
 		if ( $this->stats_callback && is_callable( $this->stats_callback ) ) {
 			return call_user_func( $this->stats_callback );
@@ -493,6 +861,13 @@ class WP_Object_Cache {
 		}
 	}
 
+	/**
+	 * get_mc function.
+	 *
+	 * @access public
+	 * @param mixed $group
+	 * @return void
+	 */
 	function &get_mc( $group ) {
 		if ( isset( $this->mc[ $group ] ) ) {
 			return $this->mc[ $group ];
@@ -501,6 +876,14 @@ class WP_Object_Cache {
 		return $this->mc['default'];
 	}
 
+	/**
+	 * failure_callback function.
+	 *
+	 * @access public
+	 * @param mixed $host
+	 * @param mixed $port
+	 * @return void
+	 */
 	function failure_callback( $host, $port ) {
 		$this->connection_errors[] = array(
 			'host' => $host,
@@ -508,6 +891,13 @@ class WP_Object_Cache {
 		);
 	}
 
+	/**
+	 * salt_keys function.
+	 *
+	 * @access public
+	 * @param mixed $key_salt
+	 * @return void
+	 */
 	function salt_keys( $key_salt ) {
 		if ( strlen( $key_salt ) ) {
 			$this->key_salt = $key_salt . ':';
@@ -516,6 +906,12 @@ class WP_Object_Cache {
 		}
 	}
 
+	/**
+	 * __construct function.
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function __construct() {
 		$this->stats = array(
 			'get'        => 0,
@@ -536,13 +932,15 @@ class WP_Object_Cache {
 		reset( $buckets );
 
 		if ( is_int( key( $buckets ) ) ) {
-			$buckets = array( 'default' => $buckets );
+			$buckets = array(
+				'default' => $buckets,
+			);
 		}
 
 		foreach ( $buckets as $bucket => $servers ) {
 			$this->mc[ $bucket ] = new Memcache();
 
-			foreach ( $servers as $server  ) {
+			foreach ( $servers as $server ) {
 				if ( 'unix://' == substr( $server, 0, 7 ) ) {
 					$node = $server;
 					$port = 0;
