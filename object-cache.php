@@ -16,6 +16,14 @@ if ( ! defined( 'WP_CACHE_KEY_SALT' ) ) {
 	define( 'WP_CACHE_KEY_SALT', '' );
 }
 
+// Use this constant to block specific id+group combinations from ever being cached.
+// This can be handy if you ever need to restrict core or other plugin data that you can't directly manipulate.
+// The value of the constant should be an array, with each entry as a string with the format: `{$id}:{$group}`.
+// Example: `define( 'WP_MEMCACHED_BLOCKED_ID_GROUPS', [ 'notoptions:options', 'badkey:awesomeplugin' ] );`
+if ( ! defined( 'WP_MEMCACHED_BLOCKED_ID_GROUPS' ) ) {
+	define( 'WP_MEMCACHED_BLOCKED_ID_GROUPS', false );
+}
+
 function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
@@ -120,6 +128,10 @@ class WP_Object_Cache {
 	var $connection_errors = array();
 
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 
 		if ( is_object( $data ) ) {
@@ -179,6 +191,10 @@ class WP_Object_Cache {
 	}
 
 	function incr( $id, $n = 1, $group = 'default' ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
 
@@ -188,6 +204,10 @@ class WP_Object_Cache {
 	}
 
 	function decr( $id, $n = 1, $group = 'default' ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
 
@@ -203,6 +223,10 @@ class WP_Object_Cache {
 	}
 
 	function delete( $id, $group = 'default' ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
@@ -254,6 +278,10 @@ class WP_Object_Cache {
 	}
 
 	function get( $id, $group = 'default', $force = false ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
 
@@ -299,6 +327,10 @@ class WP_Object_Cache {
 
 			foreach ( $ids as $id ) {
 				$key = $this->key( $id, $group );
+
+				if ( $this->is_blocked_id_group( $id, $group ) ) {
+					$return[ $key ] = false;
+				}
 
 				if ( isset( $this->cache[ $key ] ) ) {
 					if ( is_object( $this->cache[ $key ] ) ) {
@@ -381,6 +413,10 @@ class WP_Object_Cache {
 	}
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key    = $this->key( $id, $group );
 
 		$expire = intval( $expire );
@@ -404,6 +440,10 @@ class WP_Object_Cache {
 	}
 
 	function set( $id, $data, $group = 'default', $expire = 0 ) {
+		if ( $this->is_blocked_id_group( $id, $group ) ) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 
 		if ( isset( $this->cache[ $key ] ) && ( 'checkthedatabaseplease' === $this->cache[ $key ] ) ) {
@@ -579,5 +619,18 @@ class WP_Object_Cache {
 
 		$this->cache_hits   =& $this->stats['get'];
 		$this->cache_misses =& $this->stats['add'];
+	}
+
+	/**
+	 * Checks if the specified id + group combination is blocked
+	 */
+	protected function is_blocked_id_group( $id, $group ) {
+		if ( empty( WP_MEMCACHED_BLOCKED_ID_GROUPS )
+			|| ! is_array( WP_MEMCACHED_BLOCKED_ID_GROUPS ) ) {
+			return false;
+		}
+
+		$key = $id . ':' . $group;
+		return in_array( $key, WP_MEMCACHED_BLOCKED_ID_GROUPS, true );
 	}
 }
