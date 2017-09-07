@@ -58,6 +58,18 @@ function wp_cache_get( $key, $group = '', $force = false ) {
 	return $wp_object_cache->get( $key, $group, $force );
 }
 
+/**
+ * Retrieve multiple cache entries
+ *
+ * @param array $groups Array of arrays, of groups and keys to retrieve
+ * @return mixed
+ */
+function wp_cache_get_multi( $groups ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->get_multi( $groups );
+}
+
 function wp_cache_init() {
 	global $wp_object_cache;
 
