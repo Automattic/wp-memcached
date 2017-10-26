@@ -337,3 +337,10 @@ proprietary programs.  If your program is a subroutine library, you may
 consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.
+
+WRITTEN OFFER
+
+The source code for any program binaries or compressed scripts that are
+included with WordPress can be freely obtained at the following URL:
+
+	https://wordpress.org/download/source/
