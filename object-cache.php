@@ -6,8 +6,24 @@ Description: Memcached backend for the WP Object Cache.
 Version: 3.0.1
 Plugin URI: http://wordpress.org/extend/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
+License: GPL2
 
 Install this file to wp-content/object-cache.php
+*/
+
+/*
+Memcached plugin is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+any later version.
+
+Memcached plugin is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Memcached plugin. If not, see LICENSE file or https://www.gnu.org/licenses/gpl-2.0.txt
 */
 
 // Users with setups where multiple installs share a common wp-config.php or $table_prefix
