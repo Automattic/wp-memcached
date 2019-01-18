@@ -279,9 +279,11 @@ class WP_Object_Cache {
 		} else if ( in_array( $group, $this->no_mc_groups ) ) {
 			$this->cache[ $key ] = $value = false;
 		} else {
-			$value = $mc->get( $key );
+			$flags = false;
+			$value = $mc->get( $key, $flags );
 
-			if ( null === $value ) {
+			// Value will be unchanged if the key doesn't exist.
+			if ( false === $flags ) {
 				$found = false;
 				$value = false;
 			}
