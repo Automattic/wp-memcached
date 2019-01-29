@@ -3,9 +3,9 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 3.0.1
+Version: 3.0.2
 Plugin URI: http://wordpress.org/extend/plugins/memcached/
-Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
+Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton, Erick Hitter
 
 Install this file to wp-content/object-cache.php
 */
@@ -328,12 +328,6 @@ class WP_Object_Cache {
 					$return[ $key ] = $mc->get( $key );
 				}
 			}
-
-			if ( $to_get ) {
-				$vals = $mc->get_multi( $to_get );
-
-				$return = array_merge( $return, $vals );
-			}
 		}
 
 		++$this->stats['get_multi'];
@@ -457,6 +451,7 @@ class WP_Object_Cache {
 	function colorize_debug_line( $line ) {
 		$colors = array(
 			'get' => 'green',
+			'get_multi' => 'green',
 			'set' => 'purple',
 			'add' => 'blue',
 			'delete' => 'red',
