@@ -1,5 +1,5 @@
 <?php
-// this file can be directly symlinked (or copied) into "/wp-content", however this plugin handles it in a better way.
+// Although the plugin does it automatically, if you manually wish, you can directly symlink (or copy) this file into "/wp-content".
 
 // addition to determine that this file is being used
 if ( !defined( 'WP_MEMCHACED_PLUGIN_USED' ) )
