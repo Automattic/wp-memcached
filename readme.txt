@@ -13,9 +13,8 @@ Memcached Object Cache provides a persistent backend for the WordPress object ca
 == Installation ==
 1. Install [memcached](http://danga.com/memcached) on at least one server. Note the connection info. The default is `127.0.0.1:11211`.
 
-1. Install the [PECL memcache extension](http://pecl.php.net/package/memcache)
+2. Install the [PECL memcache extension](http://pecl.php.net/package/memcache)
 
-1. Copy object-cache.php to wp-content
 
 == Frequently Asked Questions ==
 
