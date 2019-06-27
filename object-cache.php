@@ -52,10 +52,10 @@ function wp_cache_flush() {
 	return $wp_object_cache->flush();
 }
 
-function wp_cache_get( $key, $group = '', $force = false ) {
+function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	global $wp_object_cache;
 
-	return $wp_object_cache->get( $key, $group, $force );
+	return $wp_object_cache->get( $key, $group, $force, $found );
 }
 
 /**
@@ -265,9 +265,10 @@ class WP_Object_Cache {
 		$this->global_flush_number = $this->incr( 'flush_number', 1, 'WP_Object_Cache_global' );
 	}
 
-	function get( $id, $group = 'default', $force = false ) {
+	function get( $id, $group = 'default', $force = false, &$found = null ) {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
+		$found = true;
 
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
 			if ( is_object( $this->cache[ $key ] ) ) {
@@ -277,10 +278,15 @@ class WP_Object_Cache {
 			}
 		} else if ( in_array( $group, $this->no_mc_groups ) ) {
 			$this->cache[ $key ] = $value = false;
-		} else {
-			$value = $mc->get( $key );
 
-			if ( null === $value ) {
+			$found = false;
+		} else {
+			$flags = false;
+			$value = $mc->get( $key, $flags );
+
+			// Value will be unchanged if the key doesn't exist.
+			if ( false === $flags ) {
+				$found = false;
 				$value = false;
 			}
 
@@ -294,6 +300,7 @@ class WP_Object_Cache {
 		if ( 'checkthedatabaseplease' === $value ) {
 			unset( $this->cache[ $key ] );
 
+			$found = false;
 			$value = false;
 		}
 
