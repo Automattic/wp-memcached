@@ -278,6 +278,8 @@ class WP_Object_Cache {
 			}
 		} else if ( in_array( $group, $this->no_mc_groups ) ) {
 			$this->cache[ $key ] = $value = false;
+
+			$found = false;
 		} else {
 			$flags = false;
 			$value = $mc->get( $key, $flags );
