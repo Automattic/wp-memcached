@@ -265,10 +265,20 @@ class WP_Object_Cache {
 		$this->global_flush_number = $this->incr( 'flush_number', 1, 'WP_Object_Cache_global' );
 	}
 
+	protected function mc_has( $mc, $key ) {
+		// Memcache::add will return false if the key already exists.
+		$has = ! $mc->add( $key, 'tmp' );
+
+		if ( ! $has ) {
+			$mc->delete( $key );
+		}
+
+		return $has;
+	}
+
 	function get( $id, $group = 'default', $force = false, &$found = null ) {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
-		$found = true;
 
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
 			if ( is_object( $this->cache[ $key ] ) ) {
@@ -276,21 +286,19 @@ class WP_Object_Cache {
 			} else {
 				$value = $this->cache[ $key ];
 			}
+
+			$found = true;
 		} else if ( in_array( $group, $this->no_mc_groups ) ) {
 			$this->cache[ $key ] = $value = false;
 
 			$found = false;
 		} else {
-			$flags = false;
-			$value = $mc->get( $key, $flags );
+			$found = $this->mc_has( $mc, $key );
 
-			// Value will be unchanged if the key doesn't exist.
-			if ( false === $flags ) {
-				$found = false;
-				$value = false;
+			if ( $found ) {
+				$value = $mc->get( $key, $flags );
+				$this->cache[ $key ] = $value;
 			}
-
-			$this->cache[ $key ] = $value;
 		}
 
 		++$this->stats['get'];
