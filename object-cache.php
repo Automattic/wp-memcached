@@ -335,12 +335,6 @@ class WP_Object_Cache {
 					$return[ $key ] = $mc->get( $key );
 				}
 			}
-
-			if ( $to_get ) {
-				$vals = $mc->get_multi( $to_get );
-
-				$return = array_merge( $return, $vals );
-			}
 		}
 
 		++$this->stats['get_multi'];
