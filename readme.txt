@@ -2,7 +2,7 @@
 Contributors: ryan, sivel, andy
 Tags: cache, memcached
 Requires at least: 3.0
-Tested up to: 4.7
+Tested up to: 5.3
 Stable tag: 3.0.1
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
@@ -16,6 +16,12 @@ Memcached Object Cache provides a persistent backend for the WordPress object ca
 1. Install the [PECL memcache extension](http://pecl.php.net/package/memcache)
 
 1. Copy object-cache.php to wp-content
+
+1. Ensure WP_CACHE_KEY_SALT is unique per site. For each site on your server, edit wp-config.php. Add WP_CACHE_KEY_SALT like so:
+
+`
+define('WP_CACHE_KEY_SALT', '...long random string...');
+`
 
 == Frequently Asked Questions ==
 
