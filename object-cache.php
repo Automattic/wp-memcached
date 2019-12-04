@@ -139,10 +139,13 @@ class WP_Object_Cache {
 		}
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
-			$this->cache[ $key ] = $data;
+			$this->cache[ $key ] = [
+				'value' => $data,
+				'found' => false,
+			];
 
 			return true;
-		} elseif ( isset( $this->cache[ $key ] ) && false !== $this->cache[ $key ] ) {
+		} elseif ( isset( $this->cache[ $key ][ 'value' ] ) && false !== $this->cache[ $key ][ 'value' ] ) {
 			return false;
 		}
 
@@ -159,8 +162,11 @@ class WP_Object_Cache {
 			++$this->stats['add'];
 
 			$this->group_ops[ $group ][] = "add $id";
-			$this->cache[ $key ]         = $data;
-		} else if ( false === $result && true === isset( $this->cache[$key] ) && false === $this->cache[$key] ) {
+			$this->cache[ $key ]         = [
+				'value' => $data,
+				'found' => true,
+			];
+		} else if ( false === $result && true === isset( $this->cache[$key][ 'value' ] ) && false === $this->cache[$key][ 'value' ] ) {
 			/*
 			 * Here we unset local cache if remote add failed and local cache value is equal to `false` in order
 			 * to update the local cache anytime we get a new information from remote server. This way, the next
@@ -194,18 +200,27 @@ class WP_Object_Cache {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
 
-		$this->cache[ $key ] = $mc->increment( $key, $n );
+		$incremented = $mc->increment( $key, $n );
 
-		return $this->cache[ $key ];
+		$this->cache[ $key ] = [
+			'value' => $incremented,
+			'found' => false !== $incremented,
+		];
+
+		return $this->cache[ $key ][ 'value' ];
 	}
 
 	function decr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
 		$mc =& $this->get_mc( $group );
 
-		$this->cache[ $key ] = $mc->decrement( $key, $n );
+		$decremented = $mc->decrement( $key, $n );
+		$this->cache[ $key ] = [
+			'value' => $decremented,
+			'found' => false !== $decremented,
+		];
 
-		return $this->cache[ $key ];
+		return $this->cache[ $key ][ 'value' ];
 	}
 
 	function close() {
@@ -271,13 +286,18 @@ class WP_Object_Cache {
 		$found = true;
 
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
-			if ( is_object( $this->cache[ $key ] ) ) {
-				$value = clone $this->cache[ $key ];
+			if ( isset( $this->cache[ $key ][ 'value' ] ) && is_object( $this->cache[ $key ][ 'value' ] ) ) {
+				$value = clone $this->cache[ $key ][ 'value' ];
 			} else {
-				$value = $this->cache[ $key ];
+				$value = $this->cache[ $key ][ 'value' ];
 			}
+
+			$found = $this->cache[ $key ][ 'found' ];
 		} else if ( in_array( $group, $this->no_mc_groups ) ) {
-			$this->cache[ $key ] = $value = false;
+			$this->cache[ $key ] = [
+				'value' => $value = false,
+				'found' => false,
+			];
 
 			$found = false;
 		} else {
@@ -290,7 +310,10 @@ class WP_Object_Cache {
 				$value = false;
 			}
 
-			$this->cache[ $key ] = $value;
+			$this->cache[ $key ] = [
+				'value' => $value,
+				'found' => $found,
+			];
 		}
 
 		++$this->stats['get'];
@@ -312,6 +335,10 @@ class WP_Object_Cache {
 		format: $get['group-name'] = array( 'key1', 'key2' );
 		*/
 		$return = array();
+		$return_cache = array(
+			'value' => false,
+			'found' => false,
+		);
 
 		foreach ( $groups as $group => $ids ) {
 			$mc =& $this->get_mc( $group );
@@ -320,19 +347,36 @@ class WP_Object_Cache {
 				$key = $this->key( $id, $group );
 
 				if ( isset( $this->cache[ $key ] ) ) {
-					if ( is_object( $this->cache[ $key ] ) ) {
-						$return[ $key ] = clone $this->cache[ $key ];
+					if ( is_object( $this->cache[ $key ][ 'value'] ) ) {
+						$return[ $key ] = clone $this->cache[ $key ][ 'value'];
+						$return_cache[ $key ] = [
+							'value' => clone $this->cache[ $key ][ 'value'],
+							'found' => $this->cache[ $key ][ 'found'],
+						];
 					} else {
-						$return[ $key ] = $this->cache[ $key ];
+						$return[ $key ] = $this->cache[ $key ][ 'value'];
+						$return_cache[ $key ] = [
+							'value' => $this->cache[ $key ][ 'value' ],
+							'found' => $this->cache[ $key ][ 'found' ],
+						];
 					}
 
 					continue;
 				} else if ( in_array( $group, $this->no_mc_groups ) ) {
 					$return[ $key ] = false;
+					$return_cache[ $key ] = [
+						'value' => false,
+						'found' => false,
+					];
 
 					continue;
 				} else {
-					$return[ $key ] = $mc->get( $key );
+					$fresh_get = $mc->get( $key );
+					$return[ $key ] = $fresh_get;
+					$return_cache[ $key ] = [
+						'value' => $fresh_get,
+						'found' => false !== $fresh_get,
+					];
 				}
 			}
 		}
@@ -341,7 +385,7 @@ class WP_Object_Cache {
 
 		$this->group_ops[ $group ][] = "get_multi $id";
 
-		$this->cache = array_merge( $this->cache, $return );
+		$this->cache = array_merge( $this->cache, $return_cache );
 
 		return $return;
 	}
@@ -410,7 +454,10 @@ class WP_Object_Cache {
 		$result = $mc->replace( $key, $data, false, $expire );
 
 		if ( false !== $result ) {
-			$this->cache[ $key ] = $data;
+			$this->cache[ $key ] = [
+				'value' => $data,
+				'found' => true,
+			];
 		}
 
 		return $result;
@@ -419,7 +466,7 @@ class WP_Object_Cache {
 	function set( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
-		if ( isset( $this->cache[ $key ] ) && ( 'checkthedatabaseplease' === $this->cache[ $key ] ) ) {
+		if ( isset( $this->cache[ $key ] ) && ( 'checkthedatabaseplease' === $this->cache[ $key ][ 'value' ] ) ) {
 			return false;
 		}
 
@@ -427,7 +474,10 @@ class WP_Object_Cache {
 			$data = clone $data;
 		}
 
-		$this->cache[ $key ] = $data;
+		$this->cache[ $key ] = [
+			'value' => $data,
+			'found' => false, // Set to false as not technically found in memcache at this point.
+		];
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
 			return true;
