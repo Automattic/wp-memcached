@@ -491,6 +491,9 @@ class WP_Object_Cache {
 		$mc     =& $this->get_mc( $group );
 		$result = $mc->set( $key, $data, false, $expire );
 
+		// Update the found cache value with the result of the set in memcache.
+		$this->cache[ $key ][ 'found' ] = $result;
+
 		++$this->stats[ 'set' ];
 		$this->group_ops[$group][] = "set $id";
 
