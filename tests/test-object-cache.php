@@ -144,9 +144,9 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->object_cache->add_non_persistent_groups( $groups );
 		$this->assertCount( 1, array_keys( $this->object_cache->no_mc_groups, 'group-1' ) );
 	}
-	
+
 	// Tests for increment.
-	
+
 	public function test_incr_increments_a_numeric_value(): void {
 		$this->object_cache->add( 'foo1', 1 );
 		$incremented = $this->object_cache->incr( 'foo1', 1 );
@@ -847,24 +847,24 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		// Cached found value should now be true.
 		$this->assertTrue( $this->object_cache->cache[ $key ][ 'found' ] );
 	}
-	
+
 	// Tests for switch_to_blog.
-	
+
 	public function test_switch_to_blog_sets_blog_prefix_depending_on_multi_site_status(): void {
 		$this->markTestSkipped( 'Unable to test without refactoring to mock is_multisite() global function.' );
 	}
 
 	// Tests for salt_keys.
 
-    public function test_key_salt_can_be_set(): void {
-	    $this->assertEmpty( $this->object_cache->key_salt );
+	public function test_key_salt_can_be_set(): void {
+		$this->assertEmpty( $this->object_cache->key_salt );
 
 		$this->object_cache->salt_keys( 'foo' );
 		$this->assertEquals( 'foo:', $this->object_cache->key_salt );
 
-	    $this->object_cache->salt_keys( '' );
-	    $this->assertEmpty( $this->object_cache->key_salt );
-    }
+		$this->object_cache->salt_keys( '' );
+		$this->assertEmpty( $this->object_cache->key_salt );
+	}
 
 	/**
 	 * @see https://github.com/Automattic/wp-memcached/issues/40
