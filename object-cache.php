@@ -518,7 +518,15 @@ class WP_Object_Cache {
 
 		$cmd = substr( $line, 0, strpos( $line, ' ' ) );
 
-		$cmd2 = "<span style='color:{$colors[$cmd]}'>$cmd</span>";
+		// Start off with a neutral default color...
+		$color_for_cmd = 'brown';
+
+		// And if the cmd has a specific color, use that instead
+		if ( isset( $colors[ $cmd ] ) ) {
+			$color_for_cmd = $colors[ $cmd ];
+		}
+
+		$cmd2 = "<span style='color:{$color_for_cmd}'>$cmd</span>";
 
 		return $cmd2 . substr( $line, strlen( $cmd ) ) . "\n";
 	}
