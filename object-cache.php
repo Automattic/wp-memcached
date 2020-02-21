@@ -527,9 +527,9 @@ class WP_Object_Cache {
 			$color_for_cmd = $colors[ $cmd ];
 		}
 
-		$cmd2 = "<span style='color:{$color_for_cmd}'>$cmd</span>";
+		$cmd2 = '<span style="color:' . esc_attr( $color_for_cmd ) . '">' . esc_html( $cmd ) . '</span>';
 
-		return $cmd2 . substr( $line, strlen( $cmd ) ) . "\n";
+		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "\n";
 	}
 
 	function stats() {
