@@ -511,6 +511,7 @@ class WP_Object_Cache {
 	function colorize_debug_line( $line ) {
 		$colors = array(
 			'get' => 'green',
+			'get_multi' => 'green',
 			'set' => 'purple',
 			'add' => 'blue',
 			'delete' => 'red',
