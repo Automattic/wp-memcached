@@ -891,4 +891,54 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertFalse( $found );
 	}
+
+	public function get_colorize_debug_line_data() {
+		return array(
+			array(
+				// Command
+				'get foo',
+				// Expected color
+				'green',
+			),
+			array(
+				// Command
+				'get_multi foo',
+				// Expected color
+				'green',
+			),
+			array(
+				// Command
+				'set foo',
+				// Expected color
+				'purple',
+			),
+			array(
+				// Command
+				'add foo',
+				// Expected color
+				'blue',
+			),
+			array(
+				// Command
+				'delete foo',
+				// Expected color
+				'red',
+			),
+			array(
+				// Command
+				'unknown foo',
+				// Expected color
+				'brown', // Default
+			),
+		);
+	}
+
+	/**
+	 * @dataProvider get_colorize_debug_line_data
+	 */
+	public function test_colorize_debug_line( $command, $expected_color ) {
+		$colorized = $this->object_cache->colorize_debug_line( $command );
+
+		$this->assertContains( $expected_color, $colorized );
+	}
 }
