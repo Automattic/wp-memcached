@@ -891,4 +891,16 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertFalse( $found );
 	}
+	
+	public function test_found_wp_cache_get() {
+		$found = null;
+		
+		// Force to read from cache
+		wp_cache_get( 'foo', null, true, $found );
+		$this->assertFalse( $found );
+		
+		wp_cache_set( 'foo', false );
+		wp_cache_get( 'foo', null, true, $found );
+		$this->assertTrue( $found );
+	}
 }
