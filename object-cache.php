@@ -159,7 +159,7 @@ class WP_Object_Cache {
 		$result = $mc->add( $key, $data, false, $expire );
 
 		if ( false !== $result ) {
-			++$this->stats['add'];
+			$this->stats_increment( 'add' );
 
 			$this->group_ops[ $group ][] = "add $id";
 			$this->cache[ $key ]         = [
@@ -242,7 +242,7 @@ class WP_Object_Cache {
 
 		$result = $mc->delete( $key );
 
-		++$this->stats['delete'];
+		$this->stats_increment( 'delete' );
 
 		$this->group_ops[ $group ][] = "delete $id";
 
@@ -316,7 +316,7 @@ class WP_Object_Cache {
 			];
 		}
 
-		++$this->stats['get'];
+		$this->stats_increment( 'get' );
 
 		$this->group_ops[ $group ][] = "get $id";
 
@@ -381,7 +381,7 @@ class WP_Object_Cache {
 			}
 		}
 
-		++$this->stats['get_multi'];
+		$this->stats_increment( 'get_multi' );
 
 		$this->group_ops[ $group ][] = "get_multi $id";
 
@@ -494,7 +494,7 @@ class WP_Object_Cache {
 		// Update the found cache value with the result of the set in memcache.
 		$this->cache[ $key ][ 'found' ] = $result;
 
-		++$this->stats[ 'set' ];
+		$this->stats_increment( 'set' );
 		$this->group_ops[$group][] = "set $id";
 
 		return $result;
@@ -566,6 +566,21 @@ class WP_Object_Cache {
 
 			echo "</pre>\n";
 		}
+	}
+
+	/**
+	 * Increments a stats key by one safely. Returns the new value.
+	 *
+	 * @param string $key The key to increment in the stats array.
+	 *
+	 * @return int The new value of the stats counter.
+	 */
+	public function stats_increment( $key ) {
+		if ( ! isset( $this->stats[ $key ] ) ) {
+			$this->stats[ $key ] = 0;
+		}
+
+		return ++ $this->stats[ $key ];
 	}
 
 	function &get_mc( $group ) {

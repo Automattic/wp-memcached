@@ -941,4 +941,20 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertContains( $expected_color, $colorized );
 	}
+
+	/**
+	 * In some cases, such as stop_the_insanity(), or abstract-testcase.php
+	 * in wordpress-develop, the stats property is reset to an empty array,
+	 * minus any of its keys. This test ensures that no undefined key warnings
+	 * occur when attempting to increment a value in the stats array that
+	 * no longer exists.
+	 */
+	public function test_stats_reset() {
+		global $wp_object_cache;
+
+		/* @var WP_Object_Cache */
+		$wp_object_cache->stats = array();
+
+		$this->assertEquals( false, wp_cache_get( 'some-key' ) );
+	}
 }
