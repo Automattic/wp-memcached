@@ -2,8 +2,8 @@
 Contributors: ryan, sivel, andy
 Tags: cache, memcached
 Requires at least: 3.0
-Tested up to: 4.7
-Stable tag: 3.0.1
+Tested up to: 4.9.5
+Stable tag: 3.0.2
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
 
@@ -73,6 +73,15 @@ widget
 `
 
 == Changelog ==
+
+= 3.0.2 =
+* Fixed issue with stale local cache in case remote ADD fails
+* Added wp_cache_get_multi function
+* Introduced max expiration value (30 days)
+* Added custom stats callback
+* Added tracking for SET operations
+* Fixed PHP notices for undefined keys in stats array
+* Code style improvements (Whitespacing, Yoda conditions ...)
 
 = 3.0.1 =
 * Fix key generation error in switch_to_blog()
