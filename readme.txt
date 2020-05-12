@@ -2,8 +2,8 @@
 Contributors: ryan, sivel, andy
 Tags: cache, memcached
 Requires at least: 3.0
-Tested up to: 4.5
-Stable tag: 3.0.2
+Tested up to: 4.7
+Stable tag: 3.0.1
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
 
