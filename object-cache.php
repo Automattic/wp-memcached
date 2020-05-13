@@ -594,43 +594,30 @@ class WP_Object_Cache {
 	function js_toggle() {
 		echo "
 		<script>
-		document.addEventListener( 'click', function ( event ) {
-			// Make sure clicked element is our toggle
-			if ( event.target.id.indexOf( 'object-cache-stats-toggle' ) === -1 ) {
+		function memcachedToggleVisibility( id, idPrefix ) {
+			let element = document.getElementById( id );
+			if ( ! element ) {
 				return;
 			}
 
-			// Prevent default link behavior
-			event.preventDefault();
-
-			// We use #element-id to show elements.
-			let content = document.querySelector( event.target.hash );
-			if ( ! content ) {
-				return;
+			// Hide all element with `idPrefix` if given
+			if ( idPrefix ) {
+				let groupStats = document.querySelectorAll( '[id^=\"' + idPrefix + '\"]' );
+				Array.prototype.forEach.call(
+					groupStats,
+					function ( element ) {
+					    element.style.display = 'none';
+					}
+				);
 			}
 
-			// Unset the `current` class from all elements.
-			let listItems = document.querySelectorAll( '[id^=\"object-cache-stats-toggle-menu-link-\"]' );
-			Array.prototype.forEach.call(
-				listItems,
-				function ( element ) {
-				    element.parentNode.classList.remove( 'current' );
-				}
-			);
-			// Set `current` on the one we clicked.
-			event.target.parentNode.classList.add( 'current' );
-
-			// Hide the memcached stats.
-			let groupStats = document.querySelectorAll( '[id^=\"object-cache-stats-menu-target-\"]' );
-			Array.prototype.forEach.call(
-				groupStats,
-				function ( element ) {
-				    element.style.display = 'none';
-				}
-			);
-			// Show the one we clicked.
-			content.style.display = 'block';
-		} );
+			// Toggle the one we clicked.
+			if ( 'none' === element.style.display ) {
+				element.style.display = 'block';
+			} else {
+				element.style.display = 'none';
+			}
+		}
 		</script>
 		";
 	}
@@ -667,15 +654,15 @@ class WP_Object_Cache {
 		}
 
 		$total_ops = 0;
+		$group_titles = array();
 		foreach ( $groups as $group ) {
-			$current = $active_group == $group ? ' class="current"' : '';
 			$group_ops = count( $this->group_ops[ $group ] );
 			$group_size = $this->human_filesize( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ) );
 			$group_time = number_format( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1, '.', ',' );
 			$total_ops += $group_ops;
 			$group_title = "{$group}[$group_ops][$group_size][{$group_time}ms]";
-
-			echo "\t<li$current><a id='object-cache-stats-toggle-menu-link-" . esc_attr( $group ) . "' href='#object-cache-stats-menu-target-" . esc_attr( $group ) . "'>" . esc_html( $group_title ) . "</a></li>\n";
+			$group_titles[ $group ] = $group_title;
+			echo "\t<li><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-menu-target-" . esc_attr( $group ) . "\", \"object-cache-stats-menu-target-\" );'>" . esc_html( $group_title ) . "</a></li>\n";
 		}
 		echo "</ul>\n";
 
@@ -683,6 +670,7 @@ class WP_Object_Cache {
 		foreach ( $groups as $group ) {
 			$current = $active_group == $group ? 'style="display: block"' : 'style="display: none"';
 			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group ) . "' class='object-cache-stats-menu-target' $current>\n";
+			echo "<h5>{$group_titles[ $group ]}</h5>\n";
 			echo "<pre>\n";
 			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
 				printf( '%3d ', $o );
@@ -720,7 +708,9 @@ class WP_Object_Cache {
 		// backtrace
 		$bt_link = '';
 		if ( isset( $arr[6] ) ) {
-			$bt_link .= "<pre>" . esc_html( $arr[6] ) . "</pre>";
+			$btcrc = crc32( serialize( $arr[1] ) );
+			$bt_link = " <small><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-debug-$btcrc\" );'>Toggle Backtrace</a></small>";
+			$bt_link .= "<pre id='object-cache-stats-debug-$btcrc' style='display:none'>" . esc_html( $arr[6] ) . "</pre>";
 		}
 
 		return $this->colorize_debug_line( $line, $bt_link );
