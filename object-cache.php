@@ -675,7 +675,7 @@ class WP_Object_Cache {
 		foreach ( $groups as $group ) {
 			$current = $active_group == $group ? 'style="display: block"' : 'style="display: none"';
 			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group ) . "' class='object-cache-stats-menu-target' $current>\n";
-			echo "<h5>{$group_titles[ $group ]}</h5>\n";
+			echo "<h3>{$group_titles[ $group ]}</h3>\n";
 			echo "<pre>\n";
 			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
 				printf( '%3d ', $o );
