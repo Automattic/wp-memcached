@@ -80,6 +80,7 @@ widget
 * PHP 5.6.20 is now required
 * Fix **get_multi** to show per group calls
 * Filter **(memcached_strip_keys)** to bypass memcached key stripping
+* Special group for **slow-ops** ( > 0.005 μs ) with backtrace
 
 = 3.0.1 =
 * Fix key generation error in switch_to_blog()
