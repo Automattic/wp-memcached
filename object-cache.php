@@ -687,7 +687,7 @@ class WP_Object_Cache {
 		$line .= json_encode( $arr[1] ) . " ";
 
 		// comment
-		if ( isset( $arr[2] ) ) {
+		if ( isset( $arr[4] ) ) {
 			$line .= "{$arr[4]} ";
 		}
 
