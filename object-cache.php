@@ -720,7 +720,6 @@ class WP_Object_Cache {
 		// backtrace
 		$bt_link = '';
 		if ( isset( $arr[6] ) ) {
-			$bt_link = " <small><a href='#'>Expand Backtrace</a></small>";
 			$bt_link .= "<pre>" . esc_html( $arr[6] ) . "</pre>";
 		}
 
