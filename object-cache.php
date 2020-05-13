@@ -656,11 +656,15 @@ class WP_Object_Cache {
 		$total_ops = 0;
 		$group_titles = array();
 		foreach ( $groups as $group ) {
+			$group_name = $group;
+			if ( empty( $group_name ) ) {
+				$group_name = 'default';
+			}
 			$group_ops = count( $this->group_ops[ $group ] );
 			$group_size = $this->human_filesize( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ) );
 			$group_time = number_format( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1, '.', ',' );
 			$total_ops += $group_ops;
-			$group_title = "{$group}[$group_ops][$group_size][{$group_time}ms]";
+			$group_title = "{$group_name} [$group_ops][$group_size][{$group_time}ms]";
 			$group_titles[ $group ] = $group_title;
 			echo "\t<li><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-menu-target-" . esc_attr( $group ) . "\", \"object-cache-stats-menu-target-\" );'>" . esc_html( $group_title ) . "</a></li>\n";
 		}
