@@ -3,7 +3,7 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 3.0.2
+Version: 3.1.0
 Plugin URI: http://wordpress.org/extend/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
 
