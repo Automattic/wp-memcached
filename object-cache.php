@@ -642,7 +642,7 @@ class WP_Object_Cache {
 
 		echo "<ul class='debug-menu-links'>\n";
 		$groups = array_keys( $this->group_ops );
-		asort( $groups );
+		usort( $groups, 'strnatcasecmp' );
 
 		$active_group = $groups[0];
 		// Always show `slow-ops` first
