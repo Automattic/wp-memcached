@@ -569,7 +569,14 @@ class WP_Object_Cache {
 
 		$cmd = substr( $line, 0, strpos( $line, ' ' ) );
 
-		$cmd2 = "<span style='color:{$colors[$cmd]}; font-weight: bold;'>" . esc_html( $cmd ) . "</span>";
+		// Start off with a neutral default color...
+		$color_for_cmd = 'brown';
+		// And if the cmd has a specific color, use that instead
+		if ( isset( $colors[ $cmd ] ) ) {
+			$color_for_cmd = $colors[ $cmd ];
+		}
+
+		$cmd2 = "<span style='color:{$color_for_cmd}; font-weight: bold;'>" . esc_html( $cmd ) . "</span>";
 
 		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "$trailing_html\n";
 	}
