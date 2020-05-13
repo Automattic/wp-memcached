@@ -3,7 +3,7 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 3.0.1
+Version: 3.1.0
 Plugin URI: http://wordpress.org/extend/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
 
@@ -131,6 +131,9 @@ class WP_Object_Cache {
 
 	var $connection_errors = array();
 
+	var $time_total = 0;
+	var $size_total = 0;
+
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
@@ -156,13 +159,28 @@ class WP_Object_Cache {
 			$expire = $this->default_expiration;
 		}
 
+		if ( is_string( $data ) ) {
+			$size = strlen( $data );
+		} else {
+			$serialized = serialize( $data );
+			$size = strlen( $serialized );
+		}
+		$this->timer_start();
 		$result = $mc->add( $key, $data, false, $expire );
+		$elapsed = $this->timer_stop();
+
+		$comment = '';
+		if ( isset( $this->cache[ $key ] ) ) {
+			$comment .= ' [lc already]';
+		}
+		if ( false === $result ) {
+			$comment .= ' [mc already]';
+		}
+
+		$this->group_ops_stats( 'add', $key, $group, $size, $elapsed, $comment );
 
 		if ( false !== $result ) {
-			++$this->stats['add'];
-
-			$this->group_ops[ $group ][] = "add $id";
-			$this->cache[ $key ]         = [
+			$this->cache[ $key ] = [
 				'value' => $data,
 				'found' => true,
 			];
@@ -240,11 +258,11 @@ class WP_Object_Cache {
 
 		$mc =& $this->get_mc( $group );
 
+		$this->timer_start();
 		$result = $mc->delete( $key );
+		$elapsed = $this->timer_stop();
 
-		++$this->stats['delete'];
-
-		$this->group_ops[ $group ][] = "delete $id";
+		$this->group_ops_stats( 'delete', $key, $group, null, $elapsed );
 
 		if ( false !== $result ) {
 			unset( $this->cache[ $key ] );
@@ -291,8 +309,9 @@ class WP_Object_Cache {
 			} else {
 				$value = $this->cache[ $key ][ 'value' ];
 			}
-
 			$found = $this->cache[ $key ][ 'found' ];
+
+			$this->group_ops_stats( 'get_local', $key, $group, null, null, 'local' );
 		} else if ( in_array( $group, $this->no_mc_groups ) ) {
 			$this->cache[ $key ] = [
 				'value' => $value = false,
@@ -300,9 +319,13 @@ class WP_Object_Cache {
 			];
 
 			$found = false;
+
+			$this->group_ops_stats( 'get_local', $key, $group, null, null, 'not_in_local' );
 		} else {
 			$flags = false;
+			$this->timer_start();
 			$value = $mc->get( $key, $flags );
+			$elapsed = $this->timer_stop();
 
 			// Value will be unchanged if the key doesn't exist.
 			if ( false === $flags ) {
@@ -314,11 +337,16 @@ class WP_Object_Cache {
 				'value' => $value,
 				'found' => $found,
 			];
+
+			if ( is_null( $value ) || $value === false ) {
+				$this->group_ops_stats( 'get', $key, $group, null, $elapsed, 'not_in_memcache' );
+			} else if ( 'checkthedatabaseplease' === $value ) {
+				$this->group_ops_stats( 'get', $key, $group, null, $elapsed, 'checkthedatabaseplease' );
+			} else {
+				$size = strlen( serialize( $value ) );
+				$this->group_ops_stats( 'get', $key, $group, $size, $elapsed, 'memcache' );
+			}
 		}
-
-		++$this->stats['get'];
-
-		$this->group_ops[ $group ][] = "get $id";
 
 		if ( 'checkthedatabaseplease' === $value ) {
 			unset( $this->cache[ $key ] );
@@ -342,9 +370,12 @@ class WP_Object_Cache {
 
 		foreach ( $groups as $group => $ids ) {
 			$mc =& $this->get_mc( $group );
+			$keys = array();
+			$this->timer_start();
 
 			foreach ( $ids as $id ) {
 				$key = $this->key( $id, $group );
+				$keys[] = $key;
 
 				if ( isset( $this->cache[ $key ] ) ) {
 					if ( is_object( $this->cache[ $key ][ 'value'] ) ) {
@@ -379,11 +410,10 @@ class WP_Object_Cache {
 					];
 				}
 			}
+
+			$elapsed = $this->timer_stop();
+			$this->group_ops_stats( 'get_multi', $keys, $group, null, $elapsed );
 		}
-
-		++$this->stats['get_multi'];
-
-		$this->group_ops[ $group ][] = "get_multi $id";
 
 		$this->cache = array_merge( $this->cache, $return_cache );
 
@@ -438,20 +468,27 @@ class WP_Object_Cache {
 	}
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
-		$key    = $this->key( $id, $group );
-
+		$key = $this->key( $id, $group );
 		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
-
-		$mc     =& $this->get_mc( $group );
+		$mc =& $this->get_mc( $group );
 
 		if ( is_object( $data ) ) {
 			$data = clone $data;
 		}
 
+		if ( is_string( $data ) ) {
+			$size = strlen( $data );
+		} else {
+			$serialized = serialize( $data );
+			$size = strlen( $serialized );
+		}
+		$this->timer_start();
 		$result = $mc->replace( $key, $data, false, $expire );
+		$elapsed = $this->timer_stop();
+		$this->group_ops_stats( 'replace', $key, $group, $size, $elapsed );
 
 		if ( false !== $result ) {
 			$this->cache[ $key ] = [
@@ -480,6 +517,8 @@ class WP_Object_Cache {
 		];
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
+			$this->group_ops_stats( 'set_local', $key, $group, null, null );
+
 			return true;
 		}
 
@@ -488,14 +527,21 @@ class WP_Object_Cache {
 			$expire = $this->default_expiration;
 		}
 
-		$mc     =& $this->get_mc( $group );
+		$mc =& $this->get_mc( $group );
+
+		if ( is_string( $data ) ) {
+			$size = strlen( $data );
+		} else {
+			$serialized = serialize( $data );
+			$size = strlen( $serialized );
+		}
+		$this->timer_start();
 		$result = $mc->set( $key, $data, false, $expire );
+		$elapsed = $this->timer_stop();
+		$this->group_ops_stats( 'set', $key, $group, $size, $elapsed );
 
 		// Update the found cache value with the result of the set in memcache.
 		$this->cache[ $key ][ 'found' ] = $result;
-
-		++$this->stats[ 'set' ];
-		$this->group_ops[$group][] = "set $id";
 
 		return $result;
 	}
@@ -508,64 +554,162 @@ class WP_Object_Cache {
 		$this->blog_prefix = ( is_multisite() ? $blog_id : $table_prefix );
 	}
 
-	function colorize_debug_line( $line ) {
+	function colorize_debug_line( $line, $trailing_html = '' ) {
 		$colors = array(
 			'get' => 'green',
-			'get_multi' => 'green',
+			'get_local' => 'lightgreen',
+			'get_multi' => 'fuchsia',
 			'set' => 'purple',
+			'set_local' => 'orchid',
 			'add' => 'blue',
 			'delete' => 'red',
+			'delete_local' => 'tomato',
+			'slow-ops' => 'crimson',
 		);
 
 		$cmd = substr( $line, 0, strpos( $line, ' ' ) );
 
-		// Start off with a neutral default color...
-		$color_for_cmd = 'brown';
+		$cmd2 = "<span style='color:{$colors[$cmd]}; font-weight: bold;'>" . esc_html( $cmd ) . "</span>";
 
-		// And if the cmd has a specific color, use that instead
-		if ( isset( $colors[ $cmd ] ) ) {
-			$color_for_cmd = $colors[ $cmd ];
-		}
+		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "$trailing_html\n";
+	}
 
-		$cmd2 = '<span style="color:' . esc_attr( $color_for_cmd ) . '">' . esc_html( $cmd ) . '</span>';
+	function human_filesize( $bytes ) {
+		$sz = 'BKMGTP';
+		$factor = floor( ( strlen( $bytes ) - 1 ) / 3 );
+		$scaled = $bytes / pow( 1024, $factor );
+		$decimals = 3 - strlen( intval( $scaled ) );
+		$format = ( $decimals && intval( $scaled ) != $scaled ) ? "%.{$decimals}f" : '%d';
 
-		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "\n";
+		return sprintf( $format, $scaled ) . @$sz[ $factor ];
+	}
+
+	function js_toggle() {
+		echo "
+		<script>
+		document.addEventListener( 'click', function ( event ) {
+			// Make sure clicked element is our toggle
+			if ( event.target.id.indexOf( 'object-cache-stats-toggle' ) === -1 ) {
+				return;
+			}
+
+			// Prevent default link behavior
+			event.preventDefault();
+
+			// We use #element-id to show elements.
+			let content = document.querySelector( event.target.hash );
+			if ( ! content ) {
+				return;
+			}
+
+			// Unset the `current` class from all elements.
+			let listItems = document.querySelectorAll('[id^=\"object-cache-stats-toggle-menu-link-\"]');
+			Array.prototype.forEach.call(
+				listItems,
+				function ( element ) {
+				    element.parentNode.classList.remove( 'current' );
+				}
+			);
+			// Set `current` on the one we clicked.
+			event.target.parentNode.classList.add( 'current' );
+
+			// Hide the memcached stats.
+			let groupStats = document.querySelectorAll('[id^=\"object-cache-stats-menu-target-\"]');
+			Array.prototype.forEach.call(
+				groupStats,
+				function ( element ) {
+				    element.style.display = 'none';
+				}
+			);
+			// Show the one we clicked.
+			content.style.display = 'block';
+		} );
+		</script>
+		";
 	}
 
 	function stats() {
-		if ( $this->stats_callback && is_callable( $this->stats_callback ) ) {
-			return call_user_func( $this->stats_callback );
-		}
+		$this->js_toggle();
 
-		echo "<p>\n";
+		echo '<h2><span>Total memcache query time:</span>' . number_format( sprintf( '%0.1f', $this->time_total * 1000 ), 1, '.', ',' ) . 'ms</h2>';
+		echo "\n";
+		echo '<h2><span>Total memcache size:</span>' . $this->human_filesize( $this->size_total ) . '</h2>';
+		echo "\n";
 
 		foreach ( $this->stats as $stat => $n ) {
-			echo '<strong>' . esc_html( $stat ) . '</strong>' . esc_html( $n );
-			echo "<br/>\n";
-		}
-
-		echo "</p>\n";
-		echo '<h3>Memcached:</h3>';
-
-		foreach ( $this->group_ops as $group => $ops ) {
-			if ( ! isset( $_GET['debug_queries'] ) && 500 < count( $ops ) ) {
-				$ops = array_slice( $ops, 0, 500 );
-				echo "<big>Too many to show! <a href='" . esc_url( add_query_arg( 'debug_queries', 'true' ) ) . "'>Show them anyway</a>.</big>\n";
+			if ( empty( $n ) ) {
+				continue;
 			}
 
-			echo '<h4>' . esc_html( $group ) . ' commands</h4>';
+			echo '<h2>';
+			echo $this->colorize_debug_line( "$stat $n" );
+			echo '</h2>';
+		}
+
+		echo "<ul class='debug-menu-links'>\n";
+		$groups = array_keys( $this->group_ops );
+
+		$active_group = in_array( 'slow-ops', $groups ) ? 'slow-ops' : $groups[0];
+
+		$total_ops = 0;
+		foreach ( $groups as $group ) {
+			$current = $active_group == $group ? ' class="current"' : '';
+			$group_ops = count( $this->group_ops[ $group ] );
+			$group_size = $this->human_filesize( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ) );
+			$group_time = number_format( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1, '.', ',' );
+			$total_ops += $group_ops;
+			$group_title = "{$group}[$group_ops][$group_size][{$group_time}ms]";
+			echo "\t<li$current><a id='object-cache-stats-toggle-menu-link-" . esc_attr( $group ) . "' href='#object-cache-stats-menu-target-" . esc_attr( $group ) . "'>" . esc_html( $group_title ) . "</a></li>\n";
+		}
+		echo "</ul>\n";
+
+		echo "<div id='object-cache-stats-menu-targets'>\n";
+		foreach ( $groups as $group ) {
+			$current = $active_group == $group ? 'style="display: block"' : 'style="display: none"';
+			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group ) . "' class='object-cache-stats-menu-target' $current>\n";
 			echo "<pre>\n";
-
-			$lines = array();
-
-			foreach ( $ops as $op ) {
-				$lines[] = $this->colorize_debug_line( $op );
+			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
+				printf( '%3d ', $o );
+				echo $this->get_group_ops_line( $arr );
 			}
-
-			print_r( $lines );
-
 			echo "</pre>\n";
+			echo "</div>";
 		}
+
+		echo "</div>";
+	}
+
+	function get_group_ops_line( $arr ) {
+		// operation
+		$line = "{$arr[0]} ";
+
+		// key
+		$line .= json_encode( $arr[1] ) . " ";
+
+		// comment
+		if ( isset( $arr[2] ) ) {
+			$line .= "{$arr[4]} ";
+		}
+
+		// size
+		if ( isset( $arr[2] ) ) {
+			$line .= '(' . $this->human_filesize( $arr[2] ) . ') ';
+		}
+
+		// time
+		if ( isset( $arr[3] ) ) {
+			$line .= '(' . number_format( sprintf( '%0.1f', $arr[3] * 1000 ), 1, '.', ',' ) . ' ms)';
+		}
+
+		// backtrace
+		$bt_link = '';
+		if ( isset( $arr[6] ) ) {
+			$btcrc = crc32( serialize( $arr[1] ) );
+			$bt_link = " <small><a id='object-cache-stats-toggle-debug-bt-$btcrc' href='#object-cache-stats-debug-bt-$btcrc'>Expand Backtrace</a></small>";
+			$bt_link .= "<div id='object-cache-stats-debug-bt-$btcrc' style='display:none'>" . esc_html( $arr[6] ) . "</div>";
+		}
+
+		return $this->colorize_debug_line( $line, $bt_link );
 	}
 
 	function &get_mc( $group ) {
@@ -593,11 +737,15 @@ class WP_Object_Cache {
 
 	function __construct() {
 		$this->stats = array(
-			'get'        => 0,
-			'get_multi'  => 0,
-			'add'        => 0,
-			'set'        => 0,
-			'delete'     => 0,
+			'get' => 0,
+			'get_local' => 0,
+			'get_multi' => 0,
+			'set' => 0,
+			'set_local' => 0,
+			'add' => 0,
+			'delete' => 0,
+			'delete_local' => 0,
+			'slow-ops' => 0,
 		);
 
 		global $memcached_servers;
@@ -654,5 +802,74 @@ class WP_Object_Cache {
 
 		$this->cache_hits   =& $this->stats['get'];
 		$this->cache_misses =& $this->stats['add'];
+	}
+
+	function increment_stat( $field, $num = 1 ) {
+		if ( ! isset( $this->stats[ $field ] ) ) {
+			$this->stats[ $field ] = $num;
+		} else {
+			$this->stats[ $field ] += $num;
+		}
+	}
+
+	function group_ops_stats( $op, $keys, $group, $size, $time, $comment = '' ) {
+		$this->increment_stat( $op );
+
+		// we have no use of the local ops details for now
+		if ( strpos( $op, '_local' ) ) {
+			return;
+		}
+
+		$this->size_total += $size;
+
+		$strip_keys = apply_filters( 'memcached_strip_keys', true );
+		if ( $strip_keys ) {
+			$keys = $this->strip_memcached_keys( $keys );
+		}
+
+		if ( $time > 0.005 && 'get_multi' != $op ) {
+			$this->increment_stat( 'slow-ops' );
+			$backtrace = null;
+			if ( function_exists( 'wp_debug_backtrace_summary' ) ) {
+				$backtrace = wp_debug_backtrace_summary();
+			}
+			$this->group_ops['slow-ops'][] = array( $op, $keys, $size, $time, $comment, $group, $backtrace );
+		}
+
+		$this->group_ops[ $group ][] = array( $op, $keys, $size, $time, $comment );
+	}
+
+	/**
+	 * Key format: key:flush_timer:table_prefix:key_name
+	 * We want to strip the `key:flush_timer` part to not leak the memcached keys.
+	 */
+	function strip_memcached_keys( $keys ) {
+		if ( ! is_array( $keys ) ) {
+			$keys = [ $keys ];
+		}
+
+		foreach ( $keys as $key => $value ) {
+			$second_colon = strpos( $value, ':', strpos( $value, ':' ) + 1 );
+			$keys[ $key ] = substr( $value, $second_colon + 1 );
+		}
+
+		if ( 1 === count( $keys ) ) {
+			return $keys[0];
+		}
+
+		return $keys;
+	}
+
+	function timer_start() {
+		$this->time_start = microtime( true );
+
+		return true;
+	}
+
+	function timer_stop() {
+		$time_total = microtime( true ) - $this->time_start;
+		$this->time_total += $time_total;
+
+		return $time_total;
 	}
 }
