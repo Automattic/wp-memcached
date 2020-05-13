@@ -609,19 +609,8 @@ class WP_Object_Cache {
 				return;
 			}
 
-			// Unset the `current` class from all elements.
-			let listItems = document.querySelectorAll('[id^=\"object-cache-stats-toggle-menu-link-\"]');
-			Array.prototype.forEach.call(
-				listItems,
-				function ( element ) {
-				    element.parentNode.classList.remove( 'current' );
-				}
-			);
-			// Set `current` on the one we clicked.
-			event.target.parentNode.classList.add( 'current' );
-
 			// Hide the memcached stats.
-			let groupStats = document.querySelectorAll('[id^=\"object-cache-stats-menu-target-\"]');
+			let groupStats = document.querySelectorAll( '[id^=\"object-cache-stats-menu-target-\"]' );
 			Array.prototype.forEach.call(
 				groupStats,
 				function ( element ) {
@@ -656,17 +645,24 @@ class WP_Object_Cache {
 		echo "<ul class='debug-menu-links'>\n";
 		$groups = array_keys( $this->group_ops );
 
-		$active_group = in_array( 'slow-ops', $groups ) ? 'slow-ops' : $groups[0];
+		$active_group = $groups[0];
+		// Always show `slow-ops` first
+		if ( in_array( 'slow-ops', $groups ) ) {
+			$slow_ops_key = array_search( 'slow-ops', $groups );
+			$slow_ops = $groups[ $slow_ops_key ];
+			unset( $groups[ $slow_ops_key ] );
+			array_unshift( $groups, $slow_ops );
+			$active_group = 'slow-ops';
+		}
 
 		$total_ops = 0;
 		foreach ( $groups as $group ) {
-			$current = $active_group == $group ? ' class="current"' : '';
 			$group_ops = count( $this->group_ops[ $group ] );
 			$group_size = $this->human_filesize( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ) );
 			$group_time = number_format( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1, '.', ',' );
 			$total_ops += $group_ops;
 			$group_title = "{$group}[$group_ops][$group_size][{$group_time}ms]";
-			echo "\t<li$current><a id='object-cache-stats-toggle-menu-link-" . esc_attr( $group ) . "' href='#object-cache-stats-menu-target-" . esc_attr( $group ) . "'>" . esc_html( $group_title ) . "</a></li>\n";
+			echo "\t<li><a id='object-cache-stats-toggle-menu-link-" . esc_attr( $group ) . "' href='#object-cache-stats-menu-target-" . esc_attr( $group ) . "'>" . esc_html( $group_title ) . "</a></li>\n";
 		}
 		echo "</ul>\n";
 
@@ -674,6 +670,7 @@ class WP_Object_Cache {
 		foreach ( $groups as $group ) {
 			$current = $active_group == $group ? 'style="display: block"' : 'style="display: none"';
 			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group ) . "' class='object-cache-stats-menu-target' $current>\n";
+			echo "<h5>" . esc_attr( $group ) . "</h5>";
 			echo "<pre>\n";
 			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
 				printf( '%3d ', $o );
@@ -711,9 +708,8 @@ class WP_Object_Cache {
 		// backtrace
 		$bt_link = '';
 		if ( isset( $arr[6] ) ) {
-			$btcrc = crc32( serialize( $arr[1] ) );
-			$bt_link = " <small><a id='object-cache-stats-toggle-debug-bt-$btcrc' href='#object-cache-stats-debug-bt-$btcrc'>Expand Backtrace</a></small>";
-			$bt_link .= "<div id='object-cache-stats-debug-bt-$btcrc' style='display:none'>" . esc_html( $arr[6] ) . "</div>";
+			$bt_link = " <small><a href='#'>Expand Backtrace</a></small>";
+			$bt_link .= "<pre>" . esc_html( $arr[6] ) . "</pre>";
 		}
 
 		return $this->colorize_debug_line( $line, $bt_link );
