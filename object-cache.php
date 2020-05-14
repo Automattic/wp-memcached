@@ -595,14 +595,14 @@ class WP_Object_Cache {
 		echo "
 		<script>
 		function memcachedToggleVisibility( id, hidePrefix ) {
-			let element = document.getElementById( id );
+			var element = document.getElementById( id );
 			if ( ! element ) {
 				return;
 			}
 
 			// Hide all element with `idPrefix` if given. Used to display only one element at a time.
 			if ( hidePrefix ) {
-				let groupStats = document.querySelectorAll( '[id^=\"' + hidePrefix + '\"]' );
+				var groupStats = document.querySelectorAll( '[id^=\"' + hidePrefix + '\"]' );
 				Array.prototype.forEach.call(
 					groupStats,
 					function ( element ) {
