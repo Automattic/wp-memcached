@@ -511,6 +511,7 @@ class WP_Object_Cache {
 	function colorize_debug_line( $line ) {
 		$colors = array(
 			'get' => 'green',
+			'get_multi' => 'green',
 			'set' => 'purple',
 			'add' => 'blue',
 			'delete' => 'red',
@@ -518,9 +519,17 @@ class WP_Object_Cache {
 
 		$cmd = substr( $line, 0, strpos( $line, ' ' ) );
 
-		$cmd2 = "<span style='color:{$colors[$cmd]}'>$cmd</span>";
+		// Start off with a neutral default color...
+		$color_for_cmd = 'brown';
 
-		return $cmd2 . substr( $line, strlen( $cmd ) ) . "\n";
+		// And if the cmd has a specific color, use that instead
+		if ( isset( $colors[ $cmd ] ) ) {
+			$color_for_cmd = $colors[ $cmd ];
+		}
+
+		$cmd2 = '<span style="color:' . esc_attr( $color_for_cmd ) . '">' . esc_html( $cmd ) . '</span>';
+
+		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "\n";
 	}
 
 	function stats() {
@@ -531,7 +540,7 @@ class WP_Object_Cache {
 		echo "<p>\n";
 
 		foreach ( $this->stats as $stat => $n ) {
-			echo "<strong>$stat</strong> $n";
+			echo '<strong>' . esc_html( $stat ) . '</strong>' . esc_html( $n );
 			echo "<br/>\n";
 		}
 
@@ -541,10 +550,10 @@ class WP_Object_Cache {
 		foreach ( $this->group_ops as $group => $ops ) {
 			if ( ! isset( $_GET['debug_queries'] ) && 500 < count( $ops ) ) {
 				$ops = array_slice( $ops, 0, 500 );
-				echo "<big>Too many to show! <a href='" . add_query_arg( 'debug_queries', 'true' ) . "'>Show them anyway</a>.</big>\n";
+				echo "<big>Too many to show! <a href='" . esc_url( add_query_arg( 'debug_queries', 'true' ) ) . "'>Show them anyway</a>.</big>\n";
 			}
 
-			echo "<h4>$group commands</h4>";
+			echo '<h4>' . esc_html( $group ) . ' commands</h4>';
 			echo "<pre>\n";
 
 			$lines = array();
