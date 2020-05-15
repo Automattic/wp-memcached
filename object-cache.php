@@ -579,7 +579,7 @@ class WP_Object_Cache {
 			// Hide all element with `hidePrefix` if given. Used to display only one element at a time.
 			if ( hidePrefix ) {
 				var groupStats = document.querySelectorAll( '[id^=\"' + hidePrefix + '\"]' );
-				groupStats.forEach.call(
+				groupStats.forEach(
 					function ( element ) {
 					    element.style.display = 'none';
 					}
