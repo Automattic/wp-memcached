@@ -82,6 +82,18 @@ widget
 * Filter **(memcached_strip_keys)** to bypass memcached key stripping
 * Special group for **slow-ops** ( > 0.005 μs ) with backtrace
 
+= 3.1.0 =
+* Add **wp_cache_get_multi**
+* Add support for the **$found** parameter
+* Set a variable for $max_expiration to 30 days
+* Code style changes
+* Different coloring for unknown stats group
+* Store host/port on failure_callback
+* Default stats counts
+
+= 3.0.2 =
+* Better output of HTML
+
 = 3.0.1 =
 * Fix key generation error in switch_to_blog()
 
