@@ -836,7 +836,7 @@ class WP_Object_Cache {
 			$keys = $this->strip_memcached_keys( $keys );
 		}
 
-		if ( $time > 0.005 && 'get_multi' != $op ) {
+		if ( $time > 0.005 && 'get_multi' !== $op ) {
 			$this->increment_stat( 'slow-ops' );
 			$backtrace = null;
 			if ( function_exists( 'wp_debug_backtrace_summary' ) ) {
