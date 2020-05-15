@@ -600,7 +600,7 @@ class WP_Object_Cache {
 				return;
 			}
 
-			// Hide all element with `idPrefix` if given. Used to display only one element at a time.
+			// Hide all element with `hidePrefix` if given. Used to display only one element at a time.
 			if ( hidePrefix ) {
 				var groupStats = document.querySelectorAll( '[id^=\"' + hidePrefix + '\"]' );
 				Array.prototype.forEach.call(
@@ -627,7 +627,7 @@ class WP_Object_Cache {
 
 		echo '<h2><span>Total memcache query time:</span>' . number_format( sprintf( '%0.1f', $this->time_total * 1000 ), 1, '.', ',' ) . 'ms</h2>';
 		echo "\n";
-		echo '<h2><span>Total memcache size:</span>' . $this->human_filesize( $this->size_total ) . '</h2>';
+		echo '<h2><span>Total memcache size:</span>' . esc_html( $this->human_filesize( $this->size_total ) ) . '</h2>';
 		echo "\n";
 
 		foreach ( $this->stats as $stat => $n ) {
@@ -675,7 +675,7 @@ class WP_Object_Cache {
 		foreach ( $groups as $group ) {
 			$current = $active_group == $group ? 'style="display: block"' : 'style="display: none"';
 			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group ) . "' class='object-cache-stats-menu-target' $current>\n";
-			echo "<h3>{$group_titles[ $group ]}</h3>\n";
+			echo '<h3>' . esc_html( $group_titles[ $group ] ) . '</h3>' . "\n";
 			echo "<pre>\n";
 			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
 				printf( '%3d ', $o );
