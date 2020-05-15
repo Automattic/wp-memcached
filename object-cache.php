@@ -567,16 +567,6 @@ class WP_Object_Cache {
 		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "$trailing_html\n";
 	}
 
-	function human_filesize( $bytes ) {
-		$sz = 'BKMGTP';
-		$factor = floor( ( strlen( $bytes ) - 1 ) / 3 );
-		$scaled = $bytes / pow( 1024, $factor );
-		$decimals = 3 - strlen( intval( $scaled ) );
-		$format = ( $decimals && intval( $scaled ) != $scaled ) ? "%.{$decimals}f" : '%d';
-
-		return sprintf( $format, $scaled ) . @$sz[ $factor ];
-	}
-
 	function js_toggle() {
 		echo "
 		<script>
@@ -612,7 +602,7 @@ class WP_Object_Cache {
 
 		echo '<h2><span>Total memcache query time:</span>' . number_format( sprintf( '%0.1f', $this->time_total * 1000 ), 1, '.', ',' ) . 'ms</h2>';
 		echo "\n";
-		echo '<h2><span>Total memcache size:</span>' . esc_html( $this->human_filesize( $this->size_total ) ) . '</h2>';
+		echo '<h2><span>Total memcache size:</span>' . esc_html( size_format( $this->size_total, 2 ) ) . '</h2>';
 		echo "\n";
 
 		foreach ( $this->stats as $stat => $n ) {
@@ -647,7 +637,7 @@ class WP_Object_Cache {
 				$group_name = 'default';
 			}
 			$group_ops = count( $this->group_ops[ $group ] );
-			$group_size = $this->human_filesize( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ) );
+			$group_size = size_format( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ), 2 );
 			$group_time = number_format( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1, '.', ',' );
 			$total_ops += $group_ops;
 			$group_title = "{$group_name} [$group_ops][$group_size][{$group_time}ms]";
@@ -688,7 +678,7 @@ class WP_Object_Cache {
 
 		// size
 		if ( isset( $arr[2] ) ) {
-			$line .= '(' . $this->human_filesize( $arr[2] ) . ') ';
+			$line .= '(' . size_format( $arr[2], 2 ) . ') ';
 		}
 
 		// time
