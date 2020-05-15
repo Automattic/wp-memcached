@@ -80,7 +80,7 @@ widget
 * PHP 5.6.20 is now required
 * Fix **get_multi** to show per group calls
 * Filter **(memcached_strip_keys)** to bypass memcached key stripping
-* Special group for **slow-ops** ( > 0.005 μs ) with backtrace
+* Special group for **slow-ops** ( > 5ms ) with backtrace
 
 = 3.1.0 =
 * Add **wp_cache_get_multi**

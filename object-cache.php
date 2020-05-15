@@ -133,6 +133,7 @@ class WP_Object_Cache {
 
 	var $time_total = 0;
 	var $size_total = 0;
+	var $slow_op_microseconds = 0.005; // 5ms
 
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
@@ -821,7 +822,7 @@ class WP_Object_Cache {
 			$keys = $this->strip_memcached_keys( $keys );
 		}
 
-		if ( $time > 0.005 && 'get_multi' !== $op ) {
+		if ( $time > $this->slow_op_microseconds && 'get_multi' !== $op ) {
 			$this->increment_stat( 'slow-ops' );
 			$backtrace = null;
 			if ( function_exists( 'wp_debug_backtrace_summary' ) ) {
