@@ -159,12 +159,7 @@ class WP_Object_Cache {
 			$expire = $this->default_expiration;
 		}
 
-		if ( is_string( $data ) ) {
-			$size = strlen( $data );
-		} else {
-			$serialized = serialize( $data );
-			$size = strlen( $serialized );
-		}
+		$size = $this->get_data_size( $data );
 		$this->timer_start();
 		$result = $mc->add( $key, $data, false, $expire );
 		$elapsed = $this->timer_stop();
@@ -343,7 +338,7 @@ class WP_Object_Cache {
 			} else if ( 'checkthedatabaseplease' === $value ) {
 				$this->group_ops_stats( 'get', $key, $group, null, $elapsed, 'checkthedatabaseplease' );
 			} else {
-				$size = strlen( serialize( $value ) );
+				$size = $this->get_data_size( $value );
 				$this->group_ops_stats( 'get', $key, $group, $size, $elapsed, 'memcache' );
 			}
 		}
@@ -479,12 +474,7 @@ class WP_Object_Cache {
 			$data = clone $data;
 		}
 
-		if ( is_string( $data ) ) {
-			$size = strlen( $data );
-		} else {
-			$serialized = serialize( $data );
-			$size = strlen( $serialized );
-		}
+		$size = $this->get_data_size( $data );
 		$this->timer_start();
 		$result = $mc->replace( $key, $data, false, $expire );
 		$elapsed = $this->timer_stop();
@@ -529,12 +519,7 @@ class WP_Object_Cache {
 
 		$mc =& $this->get_mc( $group );
 
-		if ( is_string( $data ) ) {
-			$size = strlen( $data );
-		} else {
-			$serialized = serialize( $data );
-			$size = strlen( $serialized );
-		}
+		$size = $this->get_data_size( $data );
 		$this->timer_start();
 		$result = $mc->set( $key, $data, false, $expire );
 		$elapsed = $this->timer_stop();
@@ -603,8 +588,7 @@ class WP_Object_Cache {
 			// Hide all element with `hidePrefix` if given. Used to display only one element at a time.
 			if ( hidePrefix ) {
 				var groupStats = document.querySelectorAll( '[id^=\"' + hidePrefix + '\"]' );
-				Array.prototype.forEach.call(
-					groupStats,
+				groupStats.forEach.call(
 					function ( element ) {
 					    element.style.display = 'none';
 					}
@@ -667,7 +651,7 @@ class WP_Object_Cache {
 			$total_ops += $group_ops;
 			$group_title = "{$group_name} [$group_ops][$group_size][{$group_time}ms]";
 			$group_titles[ $group ] = $group_title;
-			echo "\t<li><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-menu-target-" . esc_attr( $group ) . "\", \"object-cache-stats-menu-target-\" );'>" . esc_html( $group_title ) . "</a></li>\n";
+			echo "\t<li><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-menu-target-" . esc_js( $group ) . "\", \"object-cache-stats-menu-target-\" );'>" . esc_html( $group_title ) . "</a></li>\n";
 		}
 		echo "</ul>\n";
 
@@ -693,7 +677,8 @@ class WP_Object_Cache {
 		$line = "{$arr[0]} ";
 
 		// key
-		$line .= json_encode( $arr[1] ) . " ";
+		$json_encoded_key = json_encode( $arr[1] );
+		$line .= $json_encoded_key . " ";
 
 		// comment
 		if ( ! empty( $arr[4] ) ) {
@@ -713,9 +698,9 @@ class WP_Object_Cache {
 		// backtrace
 		$bt_link = '';
 		if ( isset( $arr[6] ) ) {
-			$btcrc = crc32( serialize( $arr[1] ) );
-			$bt_link = " <small><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-debug-$btcrc\" );'>Toggle Backtrace</a></small>";
-			$bt_link .= "<pre id='object-cache-stats-debug-$btcrc' style='display:none'>" . esc_html( $arr[6] ) . "</pre>";
+			$key_hash = md5( $json_encoded_key );
+			$bt_link = " <small><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-debug-$key_hash\" );'>Toggle Backtrace</a></small>";
+			$bt_link .= "<pre id='object-cache-stats-debug-$key_hash' style='display:none'>" . esc_html( $arr[6] ) . "</pre>";
 		}
 
 		return $this->colorize_debug_line( $line, $bt_link );
@@ -880,5 +865,15 @@ class WP_Object_Cache {
 		$this->time_total += $time_total;
 
 		return $time_total;
+	}
+
+	function get_data_size( $data ) {
+		if ( is_string( $data ) ) {
+			return strlen( $data );
+		}
+
+		$serialized = serialize( $data );
+
+		return strlen( $serialized );
 	}
 }
