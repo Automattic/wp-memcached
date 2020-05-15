@@ -3,7 +3,7 @@ Contributors: ryan, sivel, andy
 Tags: cache, memcached
 Requires at least: 3.0
 Tested up to: 5.3
-Stable tag: 3.0.1
+Stable tag: 3.1.0
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
 
@@ -79,6 +79,18 @@ widget
 `
 
 == Changelog ==
+
+= 3.1.0 =
+* Add **wp_cache_get_multi**
+* Add support for the **$found** parameter
+* Set a variable for $max_expiration to 30 days
+* Code style changes
+* Different coloring for unknown stats group
+* Store host/port on failure_callback
+* Default stats counts
+
+= 3.0.2 =
+* Better output of HTML
 
 = 3.0.1 =
 * Fix key generation error in switch_to_blog()

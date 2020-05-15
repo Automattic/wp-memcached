@@ -1,0 +1,18 @@
+{
+  "name": "automattic/wp-memcached",
+  "description": "Memcached Object Cache for WordPress.",
+  "homepage": "https://wordpress.org/plugins/memcached/",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0+",
+  "support": {
+    "issues": "https://github.com/Automattic/wp-memcached/issues",
+    "forum": "https://wordpress.org/support/plugin/memcached",
+    "source": "https://github.com/Automattic/wp-memcached"
+  },
+  "require": {
+    "composer/installers": "~1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^5.7"
+  }
+}
