@@ -576,7 +576,7 @@ class WP_Object_Cache {
 			$color_for_cmd = $colors[ $cmd ];
 		}
 
-		$cmd2 = "<span style='color:{$color_for_cmd}; font-weight: bold;'>" . esc_html( $cmd ) . "</span>";
+		$cmd2 = "<span style='color:" . esc_attr( $color_for_cmd ) . "; font-weight: bold;'>" . esc_html( $cmd ) . "</span>";
 
 		return $cmd2 . esc_html( substr( $line, strlen( $cmd ) ) ) . "$trailing_html\n";
 	}
