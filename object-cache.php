@@ -600,7 +600,7 @@ class WP_Object_Cache {
 	function stats() {
 		$this->js_toggle();
 
-		echo '<h2><span>Total memcache query time:</span>' . number_format_i18n( sprintf( '%0.1f', $this->time_total * 1000 ), 1 ) . ' ms</h2>';
+		echo '<h2><span>Total memcache query time:</span>' . number_format_i18n( sprintf( '%0.1f', $this->time_total * 1000 ), 2 ) . ' ms</h2>';
 		echo "\n";
 		echo '<h2><span>Total memcache size:</span>' . esc_html( size_format( $this->size_total, 2 ) ) . '</h2>';
 		echo "\n";
@@ -638,7 +638,7 @@ class WP_Object_Cache {
 			}
 			$group_ops = count( $this->group_ops[ $group ] );
 			$group_size = size_format( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ), 2 );
-			$group_time = number_format_i18n( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1 );
+			$group_time = number_format_i18n( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 2 );
 			$total_ops += $group_ops;
 			$group_title = "{$group_name} [$group_ops][$group_size][{$group_time} ms]";
 			$group_titles[ $group ] = $group_title;
@@ -687,7 +687,7 @@ class WP_Object_Cache {
 
 		// time
 		if ( isset( $arr[3] ) ) {
-			$line .= '(' . number_format_i18n( sprintf( '%0.1f', $arr[3] * 1000 ), 1 ) . ' ms)';
+			$line .= '(' . number_format_i18n( sprintf( '%0.1f', $arr[3] * 1000 ), 2 ) . ' ms)';
 		}
 
 		// backtrace
