@@ -133,7 +133,7 @@ class WP_Object_Cache {
 
 	var $time_total = 0;
 	var $size_total = 0;
-	var $slow_op_microseconds = 0.005; // 5ms
+	var $slow_op_microseconds = 0.005; // 5 ms
 
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
@@ -600,7 +600,7 @@ class WP_Object_Cache {
 	function stats() {
 		$this->js_toggle();
 
-		echo '<h2><span>Total memcache query time:</span>' . number_format( sprintf( '%0.1f', $this->time_total * 1000 ), 1, '.', ',' ) . 'ms</h2>';
+		echo '<h2><span>Total memcache query time:</span>' . number_format_i18n( sprintf( '%0.1f', $this->time_total * 1000 ), 1 ) . ' ms</h2>';
 		echo "\n";
 		echo '<h2><span>Total memcache size:</span>' . esc_html( size_format( $this->size_total, 2 ) ) . '</h2>';
 		echo "\n";
@@ -638,18 +638,22 @@ class WP_Object_Cache {
 			}
 			$group_ops = count( $this->group_ops[ $group ] );
 			$group_size = size_format( array_sum( array_map( function ( $op ) { return $op[2]; }, $this->group_ops[ $group ] ) ), 2 );
-			$group_time = number_format( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1, '.', ',' );
+			$group_time = number_format_i18n( sprintf( '%0.1f', array_sum( array_map( function ( $op ) { return $op[3]; }, $this->group_ops[ $group ] ) ) * 1000 ), 1 );
 			$total_ops += $group_ops;
-			$group_title = "{$group_name} [$group_ops][$group_size][{$group_time}ms]";
+			$group_title = "{$group_name} [$group_ops][$group_size][{$group_time} ms]";
 			$group_titles[ $group ] = $group_title;
-			echo "\t<li><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-menu-target-" . esc_js( $group ) . "\", \"object-cache-stats-menu-target-\" );'>" . esc_html( $group_title ) . "</a></li>\n";
+			echo "\t<li><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-menu-target-" . esc_js( $group_name ) . "\", \"object-cache-stats-menu-target-\" );'>" . esc_html( $group_title ) . "</a></li>\n";
 		}
 		echo "</ul>\n";
 
 		echo "<div id='object-cache-stats-menu-targets'>\n";
 		foreach ( $groups as $group ) {
+			$group_name = $group;
+			if ( empty( $group_name ) ) {
+				$group_name = 'default';
+			}
 			$current = $active_group == $group ? 'style="display: block"' : 'style="display: none"';
-			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group ) . "' class='object-cache-stats-menu-target' $current>\n";
+			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group_name ) . "' class='object-cache-stats-menu-target' $current>\n";
 			echo '<h3>' . esc_html( $group_titles[ $group ] ) . '</h3>' . "\n";
 			echo "<pre>\n";
 			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
@@ -683,7 +687,7 @@ class WP_Object_Cache {
 
 		// time
 		if ( isset( $arr[3] ) ) {
-			$line .= '(' . number_format( sprintf( '%0.1f', $arr[3] * 1000 ), 1, '.', ',' ) . ' ms)';
+			$line .= '(' . number_format_i18n( sprintf( '%0.1f', $arr[3] * 1000 ), 1 ) . ' ms)';
 		}
 
 		// backtrace
