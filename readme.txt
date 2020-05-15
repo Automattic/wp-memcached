@@ -79,7 +79,7 @@ widget
 * Better stats(). Now shows cache group/individual calls with size of the payload and timings.
 * PHP 5.6.20 is now required
 * Fix **get_multi** to show per group calls
-* Filter **(memcached_strip_keys)** to bypass memcached key stripping
+* Added filter **(memcached_strip_keys)** to bypass memcached key stripping
 * Special group for **slow-ops** ( > 5ms ) with backtrace
 
 = 3.1.0 =
