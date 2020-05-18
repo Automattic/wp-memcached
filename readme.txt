@@ -119,4 +119,4 @@ widget
 * Handle limited environments where is_multisite() is not defined
 * Fix setting and getting 0
 * PHP 5.2.4 is now required
-* Use the WP_CACHE_KEY_SALT constant if available to gaurantee uniqueness of keys
+* Use the WP_CACHE_KEY_SALT constant if available to guarantee uniqueness of keys
