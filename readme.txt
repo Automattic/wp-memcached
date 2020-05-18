@@ -23,7 +23,7 @@ Memcached Object Cache provides a persistent backend for the WordPress object ca
 define('WP_CACHE_KEY_SALT', '...long random string...');
 ```
 
-This helps cache pollution when multiplte WordPress installs are using the same Memcached server. The value must be unique for each WordPress install.
+This helps prevent cache pollution when multiplte WordPress installs are using the same Memcached server. The value must be unique for each WordPress install.
 
 == Frequently Asked Questions ==
 
