@@ -1,5 +1,5 @@
 === Memcached Object Cache ===
-Contributors: ryan, sivel, andy
+Contributors: ryan, sivel, andy, ethitter, nickdaugherty, batmoo, simonwheatley, jenkoian, bor0, aidvu
 Tags: cache, memcached
 Requires at least: 5.3
 Tested up to: 5.4.1
