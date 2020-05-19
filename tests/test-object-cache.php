@@ -902,15 +902,27 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 			),
 			array(
 				// Command
+				'get_local foo',
+				// Expected color
+				'lightgreen',
+			),
+			array(
+				// Command
 				'get_multi foo',
 				// Expected color
-				'green',
+				'fuchsia',
 			),
 			array(
 				// Command
 				'set foo',
 				// Expected color
 				'purple',
+			),
+			array(
+				// Command
+				'set_local foo',
+				// Expected color
+				'orchid',
 			),
 			array(
 				// Command
@@ -923,6 +935,12 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 				'delete foo',
 				// Expected color
 				'red',
+			),
+			array(
+				// Command
+				'delete_local foo',
+				// Expected color
+				'tomato',
 			),
 			array(
 				// Command

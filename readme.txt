@@ -1,9 +1,10 @@
 === Memcached Object Cache ===
 Contributors: ryan, sivel, andy
 Tags: cache, memcached
-Requires at least: 3.0
-Tested up to: 5.4
-Stable tag: 3.1.0
+Requires at least: 5.3
+Tested up to: 5.4.1
+Stable tag: 3.2.0
+Requires PHP: 5.6.20
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
 
@@ -81,6 +82,13 @@ widget
 `
 
 == Changelog ==
+
+= 3.2.0 =
+* Better stats(). Now shows cache group/individual calls with size of the payload and timings.
+* PHP 5.6.20 is now required
+* Fix **get_multi** to show per group calls
+* Added filter **(memcached_strip_keys)** to bypass memcached key stripping
+* Special group for **slow-ops** ( > 5ms ) with backtrace
 
 = 3.1.0 =
 * Add **wp_cache_get_multi**
