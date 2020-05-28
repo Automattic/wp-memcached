@@ -656,9 +656,9 @@ class WP_Object_Cache {
 			echo "<div id='object-cache-stats-menu-target-" . esc_attr( $group_name ) . "' class='object-cache-stats-menu-target' $current>\n";
 			echo '<h3>' . esc_html( $group_titles[ $group ] ) . '</h3>' . "\n";
 			echo "<pre>\n";
-			foreach ( $this->group_ops[ $group ] as $o => $arr ) {
-				printf( '%3d ', $o );
-				echo $this->get_group_ops_line( $arr );
+			foreach ( $this->group_ops[ $group ] as $index => $arr ) {
+				printf( '%3d ', $index );
+				echo $this->get_group_ops_line( $index, $arr );
 			}
 			echo "</pre>\n";
 			echo "</div>";
@@ -667,7 +667,7 @@ class WP_Object_Cache {
 		echo "</div>";
 	}
 
-	function get_group_ops_line( $arr ) {
+	function get_group_ops_line( $index, $arr ) {
 		// operation
 		$line = "{$arr[0]} ";
 
@@ -693,7 +693,7 @@ class WP_Object_Cache {
 		// backtrace
 		$bt_link = '';
 		if ( isset( $arr[6] ) ) {
-			$key_hash = md5( $json_encoded_key );
+			$key_hash = md5( $index . $json_encoded_key );
 			$bt_link = " <small><a href='#' onclick='memcachedToggleVisibility( \"object-cache-stats-debug-$key_hash\" );'>Toggle Backtrace</a></small>";
 			$bt_link .= "<pre id='object-cache-stats-debug-$key_hash' style='display:none'>" . esc_html( $arr[6] ) . "</pre>";
 		}
