@@ -3,7 +3,7 @@ Contributors: ryan, sivel, andy, nacin, barry, ethitter, nickdaugherty, batmoo, 
 Tags: cache, memcached
 Requires at least: 5.3
 Tested up to: 5.4.1
-Stable tag: 3.2.0
+Stable tag: 3.2.1
 Requires PHP: 5.6.20
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
@@ -82,6 +82,9 @@ widget
 `
 
 == Changelog ==
+
+= 3.2.1 =
+* Fix bug allowing **slow-ops** entries to have the same key, so toggling doesn't work
 
 = 3.2.0 =
 * Better stats(). Now shows cache group/individual calls with size of the payload and timings.
