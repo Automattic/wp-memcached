@@ -3,7 +3,7 @@ Contributors: ryan, sivel, andy, nacin, barry, ethitter, nickdaugherty, batmoo, 
 Tags: cache, memcached
 Requires at least: 5.3
 Tested up to: 5.4.1
-Stable tag: 3.2.1
+Stable tag: 3.2.2
 Requires PHP: 5.6.20
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
@@ -21,7 +21,7 @@ Memcached Object Cache provides a persistent backend for the WordPress object ca
 1. Add the `WP_CACHE_KEY_SALT` constant to the `wp-config.php`:
 
 ```php
-define('WP_CACHE_KEY_SALT', '...long random string...');
+define( 'WP_CACHE_KEY_SALT', '...long random string...' );
 ```
 
 This helps prevent cache pollution when multiplte WordPress installs are using the same Memcached server. The value must be unique for each WordPress install.
@@ -82,6 +82,9 @@ widget
 `
 
 == Changelog ==
+
+= 3.2.2 =
+* Remove filter, and base key stripping on presence of `key_salt`
 
 = 3.2.1 =
 * Fix bug allowing **slow-ops** entries to have the same key, so toggling doesn't work
