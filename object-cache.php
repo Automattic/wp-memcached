@@ -3,7 +3,7 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 3.2.1
+Version: 3.2.2
 Plugin URI: http://wordpress.org/extend/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
 
@@ -811,10 +811,7 @@ class WP_Object_Cache {
 
 		$this->size_total += $size;
 
-		$strip_keys = apply_filters( 'memcached_strip_keys', true );
-		if ( $strip_keys ) {
-			$keys = $this->strip_memcached_keys( $keys );
-		}
+		$keys = $this->strip_memcached_keys( $keys );
 
 		if ( $time > $this->slow_op_microseconds && 'get_multi' !== $op ) {
 			$this->increment_stat( 'slow-ops' );
@@ -829,8 +826,10 @@ class WP_Object_Cache {
 	}
 
 	/**
-	 * Key format: key:flush_timer:table_prefix:key_name
-	 * We want to strip the `key:flush_timer` part to not leak the memcached keys.
+	 * Key format: key_salt:flush_timer:table_prefix:key_name
+	 *
+	 * We want to strip the `key_salt:flush_timer` part to not leak the memcached keys.
+	 * If `key_salt` is set we strip `'key_salt:flush_timer`, otherwise just strip the `flush_timer` part.
 	 */
 	function strip_memcached_keys( $keys ) {
 		if ( ! is_array( $keys ) ) {
@@ -838,8 +837,13 @@ class WP_Object_Cache {
 		}
 
 		foreach ( $keys as $key => $value ) {
-			$second_colon = strpos( $value, ':', strpos( $value, ':' ) + 1 );
-			$keys[ $key ] = substr( $value, $second_colon + 1 );
+			$offset = 0;
+			if ( ! empty( $this->key_salt ) ) {
+				$offset = strpos( $value, ':' ) + 1;
+			}
+
+			$start = strpos( $value, ':', $offset );
+			$keys[ $key ] = substr( $value, $start + 1 );
 		}
 
 		if ( 1 === count( $keys ) ) {
