@@ -145,6 +145,26 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertCount( 1, array_keys( $this->object_cache->no_mc_groups, 'group-1' ) );
 	}
 
+	public function test_found_is_set_when_using_non_persistent_groups(): void {
+		/**
+		 * wp> wp_cache_add_non_persistent_groups( [ 'example' ] );
+		 * NULL
+		 * wp> wp_cache_set( 'example', 'example', 'example' );
+		 * bool(true)
+		 * wp> wp_cache_get( 'example', 'example', false, $found );
+		 * string(7) "example"
+		 * wp> $found
+		 * bool(false)
+		 */
+
+		$groups = [ 'example' ];
+		$this->object_cache->add_non_persistent_groups( $groups );
+		$this->object_cache->set( 'example', 'example', 'example' );
+		$this->object_cache->get( 'example', 'example', false, $found );
+
+		$this->assertTrue( $found );
+	}
+
 	// Tests for increment.
 
 	public function test_incr_increments_a_numeric_value(): void {
