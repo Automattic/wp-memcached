@@ -145,26 +145,6 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertCount( 1, array_keys( $this->object_cache->no_mc_groups, 'group-1' ) );
 	}
 
-	public function test_found_is_set_when_using_non_persistent_groups(): void {
-		/**
-		 * wp> wp_cache_add_non_persistent_groups( [ 'example' ] );
-		 * NULL
-		 * wp> wp_cache_set( 'example', 'example', 'example' );
-		 * bool(true)
-		 * wp> wp_cache_get( 'example', 'example', false, $found );
-		 * string(7) "example"
-		 * wp> $found
-		 * bool(false)
-		 */
-
-		$groups = [ 'example' ];
-		$this->object_cache->add_non_persistent_groups( $groups );
-		$this->object_cache->set( 'example', 'example', 'example' );
-		$this->object_cache->get( 'example', 'example', false, $found );
-
-		$this->assertTrue( $found );
-	}
-
 	// Tests for increment.
 
 	public function test_incr_increments_a_numeric_value(): void {
@@ -848,15 +828,15 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	}
 
 	public function test_set_updated_found_status_with_memcache_result(): void {
-		// Need this to ensure cache is set witout going to memcache.
+		// Need this to ensure cache is set witout going to memcache and using non persistent groups.
 		$group = 'do-not-persist-me';
 		$this->object_cache->add_non_persistent_groups( [ $group ] );
 
 		$this->object_cache->set( 'foo', 'data', $group );
 		$key = $this->object_cache->key( 'foo', $group );
 
-		// Check it's false until we use memcache.
-		$this->assertFalse( $this->object_cache->cache[ $key ][ 'found' ] );
+		// Check it's true even though we're not using memcache.
+		$this->assertTrue( $this->object_cache->cache[ $key ][ 'found' ] );
 
 		// Remove non-persistent group.
 		$this->object_cache->no_mc_groups = [];
@@ -864,8 +844,31 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		// Re-set.
 		$this->object_cache->set( 'foo', 'data', $group );
 
-		// Cached found value should now be true.
+		// Cached found value should still be true.
 		$this->assertTrue( $this->object_cache->cache[ $key ][ 'found' ] );
+	}
+
+	/**
+	 * @see https://github.com/Automattic/wp-memcached/issues/61
+	 */
+	public function test_found_is_set_when_using_non_persistent_groups(): void {
+		/**
+		 * wp> wp_cache_add_non_persistent_groups( [ 'example' ] );
+		 * NULL
+		 * wp> wp_cache_set( 'example', 'example', 'example' );
+		 * bool(true)
+		 * wp> wp_cache_get( 'example', 'example', false, $found );
+		 * string(7) "example"
+		 * wp> $found
+		 * bool(false)
+		 */
+
+		$groups = [ 'example' ];
+		$this->object_cache->add_non_persistent_groups( $groups );
+		$this->object_cache->set( 'example', 'example', 'example' );
+		$this->object_cache->get( 'example', 'example', false, $found );
+
+		$this->assertTrue( $found );
 	}
 
 	// Tests for switch_to_blog.

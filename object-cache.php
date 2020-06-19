@@ -508,7 +508,9 @@ class WP_Object_Cache {
 		];
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
-			$this->group_ops_stats( 'set_local', $key, $group, null, null );
+            $this->group_ops_stats( 'set_local', $key, $group, null, null );
+            // If using a non persistent group it will never be in memcache but will be found in our local cache so set found to true.
+            $this->cache[ $key ]['found'] = true; 
 
 			return true;
 		}
