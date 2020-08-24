@@ -60,9 +60,15 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 
 /**
  * Retrieve multiple cache entries
- *
- * @param array $groups Array of arrays, of groups and keys to retrieve
- * @return mixed
+ */
+function wp_cache_get_multiple( $keys, $group = '', $force = false ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->get_multiple( $keys, $group, $force );
+}
+
+/**
+ * Legacy method signature for wp_cache_get_multiple()
  */
 function wp_cache_get_multi( $groups ) {
 	global $wp_object_cache;
@@ -354,64 +360,99 @@ class WP_Object_Cache {
 		return $value;
 	}
 
-	function get_multi( $groups ) {
-		/*
-		format: $get['group-name'] = array( 'key1', 'key2' );
-		*/
+	function get_multiple( $ids, $group = 'default', $force = false ) {
+		$mc =& $this->get_mc( $group );
+
+		$no_mc = in_array( $group, $this->no_mc_groups );
+
+		$uncached_keys = array();
+
 		$return = array();
 		$return_cache = array(
 			'value' => false,
 			'found' => false,
 		);
 
-		foreach ( $groups as $group => $ids ) {
-			$mc =& $this->get_mc( $group );
-			$keys = array();
-			$this->timer_start();
+		foreach ( $ids as $id ) {
+			$key = $this->key( $id, $group );
 
-			foreach ( $ids as $id ) {
-				$key = $this->key( $id, $group );
-				$keys[] = $key;
-
-				if ( isset( $this->cache[ $key ] ) ) {
-					if ( is_object( $this->cache[ $key ][ 'value'] ) ) {
-						$return[ $key ] = clone $this->cache[ $key ][ 'value'];
-						$return_cache[ $key ] = [
-							'value' => clone $this->cache[ $key ][ 'value'],
-							'found' => $this->cache[ $key ][ 'found'],
-						];
-					} else {
-						$return[ $key ] = $this->cache[ $key ][ 'value'];
-						$return_cache[ $key ] = [
-							'value' => $this->cache[ $key ][ 'value' ],
-							'found' => $this->cache[ $key ][ 'found' ],
-						];
-					}
-
-					continue;
-				} else if ( in_array( $group, $this->no_mc_groups ) ) {
-					$return[ $key ] = false;
+			if ( isset( $this->cache[ $key ] ) && ( ! $force || $no_mc ) ) {
+				if ( is_object( $this->cache[ $key ][ 'value' ] ) ) {
+					$return[ $id ] = clone $this->cache[ $key ][ 'value' ];
 					$return_cache[ $key ] = [
-						'value' => false,
-						'found' => false,
+						'value' => clone $this->cache[ $key ][ 'value' ],
+						'found' => $this->cache[ $key ][ 'found' ],
 					];
-
-					continue;
 				} else {
-					$fresh_get = $mc->get( $key );
-					$return[ $key ] = $fresh_get;
+					$return[ $id ] = $this->cache[ $key ][ 'value' ];
 					$return_cache[ $key ] = [
-						'value' => $fresh_get,
-						'found' => false !== $fresh_get,
+						'value' => $this->cache[ $key ][ 'value' ],
+						'found' => $this->cache[ $key ][ 'found' ],
 					];
 				}
+
+				continue;
+			} else if ( $no_mc ) {
+				$return[ $id ] = false;
+				$return_cache[ $key ] = [
+					'value' => false,
+					'found' => false,
+				];
+
+				continue;
+			} else {
+				$uncached_keys[ $id ] = $key;
 			}
+		}
+
+		if ( $uncached_keys ) {
+			$this->timer_start();
+
+			$uncached_keys_list = array_values( $uncached_keys );
+			$values = $mc->get( $uncached_keys_list );
 
 			$elapsed = $this->timer_stop();
-			$this->group_ops_stats( 'get_multi', $keys, $group, null, $elapsed );
+			$this->group_ops_stats( 'get_multiple', $uncached_keys_list, $group, null, $elapsed );
+
+			foreach ( $uncached_keys as $id => $key ) {
+				$value = isset( $values[$key] ) ? $values[$key] : false;
+
+				$return[ $id ] = $value;
+				$return_cache[ $key ] = [
+					'value' => $value,
+					'found' => false !== $value,
+				];
+			}
 		}
 
 		$this->cache = array_merge( $this->cache, $return_cache );
+
+		return $return;
+	}
+
+	/**
+	 * Legacy implementation for get_multiple
+	 *
+	 * Kept here for backwards compatibility
+	 */
+	function get_multi( $groups ) {
+		/*
+		format: $get['group-name'] = array( 'key1', 'key2' );
+		*/
+		$return = array();
+
+		foreach ( $groups as $group => $ids ) {
+			$this->timer_start();
+			$result = $this->get_multiple( $ids, $group );
+			$elapsed = $this->timer_stop();
+
+			foreach ( $result as $id => $value ) {
+				$id_with_group = $group . ':' . $id;
+				$return[ $id_with_group ] = $value;
+			}
+
+			$this->group_ops_stats( 'get_multi', $ids, $group, null, $elapsed );
+		}
 
 		return $return;
 	}

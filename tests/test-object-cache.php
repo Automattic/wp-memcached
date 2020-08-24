@@ -509,8 +509,8 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		);
 
 		$expected = [
-			$this->object_cache->key( 'foo', 'default') => 'data',
-			$this->object_cache->key( 'foo', 'another-group') => 'data',
+			'default:foo' => 'data',
+			'another-group:foo' => 'data',
 		];
 
 		$this->assertEquals( $expected, $values );
@@ -581,9 +581,9 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		);
 
 		$expected = [
-			$this->object_cache->key( 'foo', 'default') => 'data-updated',
-			$this->object_cache->key( 'foo', 'another-group') => 'data',
-			$this->object_cache->key( 'foo', 'and-another-group') => 'data',
+			'default:foo' => 'data-updated',
+			'another-group:foo' => 'data',
+			'and-another-group:foo' => 'data',
 		];
 
 		$this->assertEquals( $expected, $values );
@@ -618,9 +618,9 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		);
 
 		$expected = [
-			$this->object_cache->key( 'foo', 'default') => 'data',
-			$this->object_cache->key( 'foo', 'another-group') => 'data',
-			$this->object_cache->key( 'foo', 'and-another-group') => 'data',
+			'default:foo' => 'data',
+			'another-group:foo' => 'data',
+			'and-another-group:foo' => 'data',
 		];
 
 		$this->assertEquals( $expected, $values );
@@ -633,7 +633,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->object_cache->add( 'foo', 'data', $group );
 
 		$values = $this->object_cache->get_multi( [ $group => [ 'foo' ] ] );
-		$expected = [ $this->object_cache->key( 'foo', $group ) => 'data' ];
+		$expected = [ $group . ':foo' => 'data' ];
 		$this->assertEquals( $expected, $values );
 
 		$expected_cache = [
@@ -654,7 +654,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		unset( $this->object_cache->cache[ $key ] );
 
 		$values = $this->object_cache->get_multi( [ $group => [ 'foo' ] ] );
-		$expected = [ $this->object_cache->key( 'foo', $group ) => false ];
+		$expected = [ $group . ':foo' => false ];
 
 		$this->assertEquals( $expected, $values );
 		$this->assertFalse( $this->object_cache->cache[ $key ][ 'value' ] );
