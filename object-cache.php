@@ -57,7 +57,7 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 
 	$value = apply_filters( 'wp_cache_get_pre', false, $key, $group, $force );
 	if ( false !== $value ) {
-		return $value
+		return $value;
 	}
 
 	return $wp_object_cache->get( $key, $group, $force, $found );
