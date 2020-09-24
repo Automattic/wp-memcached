@@ -55,6 +55,12 @@ function wp_cache_flush() {
 function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	global $wp_object_cache;
 
+	$value = apply_filters( 'pre_wp_cache_get', false, $key, $group, $force );
+	if ( false !== $value ) {
+		$found = true;
+		return $value;
+	}
+
 	return $wp_object_cache->get( $key, $group, $force, $found );
 }
 
