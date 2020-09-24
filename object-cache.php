@@ -57,6 +57,7 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 
 	$value = apply_filters( 'pre_wp_cache_get', false, $key, $group, $force );
 	if ( false !== $value ) {
+		$found = true;
 		return $value;
 	}
 
