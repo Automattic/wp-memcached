@@ -621,7 +621,7 @@ class WP_Object_Cache {
 			echo '</h2>';
 		}
 
-		echo "<ul class='debug-menu-links'>\n";
+		echo "<ul class='debug-menu-links' style='clear:left;font-size:14px;'>\n";
 		$groups = array_keys( $this->group_ops );
 		usort( $groups, 'strnatcasecmp' );
 
