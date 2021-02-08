@@ -326,7 +326,15 @@ class WP_Object_Cache {
 		} else {
 			$flags = false;
 			$this->timer_start();
-			$value = $mc->get( $key, $flags );
+
+			// Sending as an array so we can verify the key being returned is what we asked for.
+			$value = $mc->get( [ $key ], $flags );
+			if ( is_array( $value ) && isset( $value[ $key ] ) ) {
+				$value = $value[ $key ];
+			} else {
+				$value = false;
+			}
+
 			$elapsed = $this->timer_stop();
 
 			// Value will be unchanged if the key doesn't exist.
@@ -404,7 +412,14 @@ class WP_Object_Cache {
 
 					continue;
 				} else {
-					$fresh_get = $mc->get( $key );
+					// Sending as an array so we can verify the key being returned is what we asked for.
+					$fresh_get = $mc->get( [ $key ] );
+					if ( is_array( $fresh_get ) && isset( $fresh_get[ $key ] ) ) {
+						$fresh_get = $fresh_get[ $key ];
+					} else {
+						$fresh_get = false;
+					}
+
 					$return[ $key ] = $fresh_get;
 					$return_cache[ $key ] = [
 						'value' => $fresh_get,
