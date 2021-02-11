@@ -302,7 +302,6 @@ class WP_Object_Cache {
 
 	function get( $id, $group = 'default', $force = false, &$found = null ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
 		$found = true;
 
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
@@ -327,21 +326,11 @@ class WP_Object_Cache {
 			$flags = false;
 			$this->timer_start();
 
-			// Sending as an array so we can verify the key being returned is what we asked for.
-			$value = $mc->get( [ $key ], $flags );
-			if ( is_array( $value ) && isset( $value[ $key ] ) ) {
-				$value = $value[ $key ];
-			} else {
-				$value = false;
-			}
+			$validated_get = $this->validated_get( $key, $group );
+			$value = $validated_get['value'];
+			$found = $validated_get['found'];
 
 			$elapsed = $this->timer_stop();
-
-			// Value will be unchanged if the key doesn't exist.
-			if ( false === $flags ) {
-				$found = false;
-				$value = false;
-			}
 
 			$this->cache[ $key ] = [
 				'value' => $value,
@@ -379,7 +368,6 @@ class WP_Object_Cache {
 		);
 
 		foreach ( $groups as $group => $ids ) {
-			$mc =& $this->get_mc( $group );
 			$keys = array();
 			$this->timer_start();
 
@@ -412,18 +400,14 @@ class WP_Object_Cache {
 
 					continue;
 				} else {
-					// Sending as an array so we can verify the key being returned is what we asked for.
-					$fresh_get = $mc->get( [ $key ] );
-					if ( is_array( $fresh_get ) && isset( $fresh_get[ $key ] ) ) {
-						$fresh_get = $fresh_get[ $key ];
-					} else {
-						$fresh_get = false;
-					}
+					$validated_get = $this->validated_get( $key, $group );
+					$value = $validated_get['value'];
+					$found = $validated_get['found'];
 
-					$return[ $key ] = $fresh_get;
+					$return[ $key ] = $value;
 					$return_cache[ $key ] = [
-						'value' => $fresh_get,
-						'found' => false !== $fresh_get,
+						'value' => $value,
+						'found' => $found,
 					];
 				}
 			}
@@ -435,6 +419,44 @@ class WP_Object_Cache {
 		$this->cache = array_merge( $this->cache, $return_cache );
 
 		return $return;
+	}
+
+	/**
+	 * Retrieve item from the memcached server, but with extra validation.
+	 * Sends the key in an array so we can validate that the key being returned is what was requested.
+	 *
+	 * @param $key Memcached key being requested.
+	 * @param $group The key's group.
+	 * @return array Key's value, and whether it was $found in memcached.
+	 */
+	private function validated_get( $key, $group ) {
+		$mc =& $this->get_mc( $group );
+
+		$flags = false;
+		$raw_value = $mc->get( [ $key ], $flags );
+
+		$value = false;
+		if ( is_array( $raw_value ) && ! empty( $raw_value ) ) {
+			if ( array_key_exists( $key, $raw_value ) ) {
+				// For backwards-compatability, NULL needs to be set to FALSE due to how non-array params were prev returned.
+				$value = is_null( $raw_value[ $key ] ) ? false : $raw_value[ $key ];
+			} else {
+				$key_recieved = array_keys( $raw_value )[0];
+				trigger_error( "Memcache Inconsistency: Requested '$key', recieved '$key_recieved'", E_USER_WARNING );
+			}
+		}
+
+		$found = true;
+		if ( false === $flags ) {
+			// The key was not found in memcached.
+			$value = false;
+			$found = false;
+		}
+
+		return [
+			'value' => $value,
+			'found' => $found,
+		];
 	}
 
 	function flush_prefix( $group ) {
