@@ -441,8 +441,8 @@ class WP_Object_Cache {
 				// For backwards-compatability, NULL needs to be set to FALSE due to how non-array params were prev returned.
 				$value = is_null( $raw_value[ $key ] ) ? false : $raw_value[ $key ];
 			} else {
-				$key_recieved = array_keys( $raw_value )[0];
-				trigger_error( "Memcache Inconsistency: Requested '$key', recieved '$key_recieved'", E_USER_WARNING );
+				$key_received = array_keys( $raw_value )[0];
+				trigger_error( "Memcache Inconsistency: Requested '$key', received '$key_received'", E_USER_WARNING );
 			}
 		}
 
