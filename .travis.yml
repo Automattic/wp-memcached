@@ -27,6 +27,7 @@ install:
 
 before_script:
     - memcached -p 11212 -d
+    - memcached -p 11213 -d
     - "./bin/install-wp-tests.sh wordpress_test root '' localhost $WP_VERSION"
     - export COMPOSER_BIN_DIR="$HOME/.config/composer/vendor/bin"
     - export PATH="$COMPOSER_BIN_DIR:$PATH"
