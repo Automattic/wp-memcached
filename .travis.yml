@@ -17,7 +17,6 @@ before_install:
     - pecl channel-update pecl.php.net
     - pecl config-set preferred_state beta
     - echo 'yes' | pecl install memcache-4.0.5.2
-    - echo "extension = memcache.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
     - phpenv config-rm xdebug.ini
 
 install:
