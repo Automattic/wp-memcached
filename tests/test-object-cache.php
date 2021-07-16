@@ -664,8 +664,8 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	// Tests for flush_prefix.
 
 	public function test_flush_prefix_is_underscore_for_flush_number_groups(): void {
-		$this->assertEquals( '_:', $this->object_cache->flush_prefix( 'WP_Object_Cache' ) );
-		$this->assertEquals( '_:', $this->object_cache->flush_prefix( 'WP_Object_Cache_global' ) );
+		$this->assertEquals( '_:', $this->object_cache->flush_prefix( $this->object_cache->flush_group ) );
+		$this->assertEquals( '_:', $this->object_cache->flush_prefix( $this->object_cache->global_flush_group ) );
 	}
 
 	public function test_flush_prefix_sets_global_flush_number_for_global_groups(): void {
@@ -673,7 +673,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertEmpty( $this->object_cache->global_flush_number );
 
-		$global_flush_number = (int) $this->object_cache->get( $this->object_cache->flush_key, 'WP_Object_Cache_global' );
+		$global_flush_number = (int) $this->object_cache->get( $this->object_cache->flush_key, $this->object_cache->global_flush_group );
 		$this->assertEquals( $global_flush_number . ':', $this->object_cache->flush_prefix( 'global-group' ) );
 		$this->assertEquals( $global_flush_number, $this->object_cache->global_flush_number );
 
@@ -686,7 +686,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	public function test_flush_prefix_sets_flush_number_for_non_global_groups(): void {
 		$this->assertArrayNotHasKey( $this->object_cache->blog_prefix, $this->object_cache->flush_number );
 
-		$flush_number = (int) $this->object_cache->get( $this->object_cache->flush_key, 'WP_Object_Cache' );
+		$flush_number = (int) $this->object_cache->get( $this->object_cache->flush_key, $this->object_cache->flush_group );
 		$this->assertEquals( $flush_number . ':', $this->object_cache->flush_prefix( 'non-global-group' ) );
 		$this->assertEquals( $flush_number, $this->object_cache->flush_number[ $this->object_cache->blog_prefix ] );
 
