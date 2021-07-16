@@ -283,7 +283,7 @@ class WP_Object_Cache {
 		$key = $this->key( $this->flush_key, $group );
 
 		$values = array();
-		$size = 19;
+		$size = 19; // size of microsecond timestamp serialized
 		foreach ( $this->default_mcs as $i => $mc ) {
 			$flags = false;
 			$this->timer_start();
@@ -305,7 +305,6 @@ class WP_Object_Cache {
 
 		// Replicate to servers not having the max.
 		$expire = 0;
-		$size = 19;
 		foreach ( $this->default_mcs as $i => $mc ) {
 			if ( $values[ $i ] < $max ) {
 				$this->timer_start();
