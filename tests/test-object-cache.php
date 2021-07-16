@@ -8,6 +8,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	private $object_cache;
 
 	public function setUp() {
+		$GLOBALS['memcached_servers'] = array( '127.0.0.1:11211', '127.0.0.1:11212' );
 		$GLOBALS['wp_object_cache'] = $this->object_cache = new WP_Object_Cache();
 	}
 
@@ -344,6 +345,63 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertNotEmpty( $new_flush_number );
 		$this->assertNotEquals( $existing_flush_number, $new_flush_number );
+	}
+
+	public function test_flush_number_upgrades_from_v3(): void {
+		$this->object_cache->set( 'foo', 'data' );
+
+		// Reset to v3 flush_number
+		$flush_number = $this->object_cache->flush_number;
+		$key = $this->object_cache->key( $this->flush_key, $this->flush_group );
+		foreach ( $this->object_cache->default_mcs as $mc ) {
+			$mc->delete( $key );
+		}
+		$key = $this->object_cache->key( $this->object_cache->flush_key, $this->object_cache->global_flush_group );
+		foreach ( $this->object_cache->default_mcs as $mc ) {
+			$mc->delete( $key );
+		}
+		$this->object_cache->set( $this->object_cache->old_flush_key, $flush_number, $this->object_cache->flush_group );
+		$this->object_cache->set( $this->object_cache->old_flush_key, $flush_number, $this->object_cache->global_flush_group );
+		$this->object_cache->cache = array();
+		$this->object_cache->flush_number = array();
+		$this->object_cache->global_flush_number = null;
+
+		$value = $this->object_cache->get( 'foo' );
+		$this->assertEquals( $value, 'data' );
+	}
+
+	public function test_flush_number_replication_is_repaired(): void {
+		$this->object_cache->set( 'foo', 'data' );
+
+		// Remove flush_number from first mc
+		$key = $this->object_cache->key( $this->object_cache->flush_key, $this->object_cache->flush_group );
+		$deleted = $this->object_cache->default_mcs[0]->delete( $key );
+
+		$this->assertTrue( $deleted );
+
+		// Verify flush_number exists in second mc
+		$replica = $this->object_cache->default_mcs[1]->get( $key );
+
+		$this->assertEquals( $this->object_cache->flush_number[ $this->object_cache->blog_prefix ], $replica );
+
+		// Remove local copy of flush_number and reset operations log
+		$this->object_cache->flush_number = array();
+		$this->object_cache->group_ops = array();
+
+		// Attempt to load flush_number from all mcs
+		$value = $this->object_cache->get( 'foo' );
+
+		$this->assertEquals( 'data', $value );
+
+		// Count replication_repair operations
+		$repairs = 0;
+		foreach ( $this->object_cache->group_ops[ $this->object_cache->flush_group ] as $op ) {
+			if ( $op[ 0 ] === 'set_flush_number' && $op[ 4 ] === 'replication_repair' ) {
+				$repairs++;
+			}
+		}
+
+		$this->assertEquals( 1, $repairs );
 	}
 
 	// Tests for get.
