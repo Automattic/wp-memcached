@@ -10,7 +10,9 @@ services:
 
 env:
     global:
-        - MEMCACHED__HOST=localhost WP_VERSION=latest WP_MULTISITE=0 #Current stable release
+        - MEMCACHED__HOST=localhost
+        - WP_VERSION=latest
+        - WP_MULTISITE=0
         - XDEBUG_MODE=coverage
 
 before_install:
