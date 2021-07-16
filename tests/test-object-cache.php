@@ -377,6 +377,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$key = $this->object_cache->key( $this->flush_key, $this->flush_group );
 		$this->object_cache->default_mcs[0]->delete( $key );
 		$this->object_cache->flush_number = null;
+		$this->object_cache->group_ops = array();
 
 		$value = $this->object_cache->get( 'foo' );
 
