@@ -374,15 +374,26 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->object_cache->set( 'foo', 'data' );
 
 		// Remove flush_number from first mc
-		$key = $this->object_cache->key( $this->flush_key, $this->flush_group );
-		$this->object_cache->default_mcs[0]->delete( $key );
-		$this->object_cache->flush_number = null;
+		$key = $this->object_cache->key( $this->object_cache->flush_key, $this->object_cache->flush_group );
+		$deleted = $this->object_cache->default_mcs[0]->delete( $key );
+
+		$this->assertTrue( $deleted );
+
+		// Verify flush_number exists in second mc
+		$replica = $this->object_cache->default_mcs[1]->get( $key );
+
+		$this->assertEquals( $this->object_cache->flush_number[ $this->object_cache->blog_prefix ], $replica );
+
+		// Remove local copy of flush_number and reset operations log
+		$this->object_cache->flush_number = array();
 		$this->object_cache->group_ops = array();
 
+		// Attempt to load flush_number from all mcs
 		$value = $this->object_cache->get( 'foo' );
 
 		$this->assertEquals( 'data', $value );
 
+		// Count replication_repair operations
 		$repairs = 0;
 		foreach ( $this->object_cache->group_ops[ $this->object_cache->flush_group ] as $op ) {
 			if ( $op[ 0 ] === 'set_flush_number' && $op[ 4 ] === 'replication_repair' ) {
