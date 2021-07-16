@@ -378,7 +378,16 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->object_cache->default_mcs[0]->delete( $key );
 		$value = $this->object_cache->get( 'foo' );
 
-		$this->assertEquals( $value, 'data' );
+		$this->assertEquals( 'data', $value );
+
+		$repairs = 0;
+		foreach ( $this->object_cache->group_ops[ $this->object_cache->flush_group ] as $op ) {
+			if ( $op[ 0 ] === 'set_flush_number' && $op[ 4 ] === 'replication_repair' ) {
+				$repairs++;
+			}
+		}
+
+		$this->assertEquals( 1, $repairs );
 	}
 
 	// Tests for get.
@@ -432,15 +441,6 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$value = $this->object_cache->get( 'foo' );
 
 		$this->assertEquals( 'data', $value );
-
-		$repairs = 0;
-		foreach ( $this->object_cache->group_ops[ $this->object_cache->flush_group ] as $op ) {
-			if ( $op[ 0 ] === 'set_flush_number' && $op[ 4 ] === 'replication_repair' ) {
-				$repairs++;
-			}
-		}
-
-		$this->assertEquals( 1, $repairs );
 	}
 
 	public function test_get_returns_data_for_a_group(): void {
