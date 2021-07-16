@@ -13,7 +13,7 @@ env:
         - MEMCACHED__HOST=localhost
         - WP_VERSION=latest
         - WP_MULTISITE=0
-        - XDEBUG_MODE=coverage
+        - XDEBUG_MODE=off
 
 before_install:
     - sudo apt-get install gcc make autoconf libc-dev pkg-config
