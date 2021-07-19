@@ -351,17 +351,19 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->object_cache->set( 'foo', 'data' );
 
 		// Reset to v3 flush_number
-		$flush_number = $this->object_cache->flush_number;
-		$key = $this->object_cache->key( $this->flush_key, $this->flush_group );
+		$flush_number = $this->object_cache->flush_number[ $this->object_cache->blog_prefix ];
+		$key = $this->object_cache->key( $this->object_cache->flush_key, $this->object_cache->flush_group );
 		foreach ( $this->object_cache->default_mcs as $mc ) {
-			$mc->delete( $key );
+			$deleted = $mc->delete( $key );
+			$this->assertTrue( $deleted );
 		}
 		$key = $this->object_cache->key( $this->object_cache->flush_key, $this->object_cache->global_flush_group );
 		foreach ( $this->object_cache->default_mcs as $mc ) {
-			$mc->delete( $key );
+			$deleted = $mc->delete( $key );
+			$this->assertTrue( $deleted );
 		}
 		$this->object_cache->set( $this->object_cache->old_flush_key, $flush_number, $this->object_cache->flush_group );
-		$this->object_cache->set( $this->object_cache->old_flush_key, $flush_number, $this->object_cache->global_flush_group );
+		$this->object_cache->set( $this->object_cache->old_flush_key, $this->object_cache->global_flush_number, $this->object_cache->global_flush_group );
 		$this->object_cache->cache = array();
 		$this->object_cache->flush_number = array();
 		$this->object_cache->global_flush_number = null;
