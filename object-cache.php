@@ -535,7 +535,7 @@ class WP_Object_Cache {
 			$number = $this->get_global_flush_number();
 		} else {
 			$number = $this->get_blog_flush_number();
-			}
+		}
 		return $number . ':';
 	}
 
