@@ -2,8 +2,8 @@
 Contributors: ryan, sivel, andy, nacin, barry, ethitter, nickdaugherty, batmoo, simonwheatley, jenkoian, bor0, aidvu
 Tags: cache, memcached
 Requires at least: 5.3
-Tested up to: 5.4.1
-Stable tag: 3.2.2
+Tested up to: 5.8
+Stable tag: 4.0.0
 Requires PHP: 5.6.20
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
@@ -82,6 +82,10 @@ widget
 `
 
 == Changelog ==
+
+= 4.0.0 =
+* Add preemptive filter pre_wp_cache_get
+* Add flush_number replication to prevent accidental flush due to flush_number eviction, server rotation, etc.
 
 = 3.2.2 =
 * Remove filter, and base key stripping on presence of `key_salt`

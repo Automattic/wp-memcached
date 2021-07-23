@@ -3,7 +3,7 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 3.2.2
+Version: 4.0.0
 Plugin URI: https://wordpress.org/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
 
@@ -535,7 +535,7 @@ class WP_Object_Cache {
 			$number = $this->get_global_flush_number();
 		} else {
 			$number = $this->get_blog_flush_number();
-			}
+		}
 		return $number . ':';
 	}
 
