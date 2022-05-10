@@ -2,7 +2,7 @@
 Contributors: ryan, sivel, andy, nacin, barry, ethitter, nickdaugherty, batmoo, simonwheatley, jenkoian, bor0, aidvu
 Tags: cache, memcached
 Requires at least: 5.3
-Tested up to: 5.8
+Tested up to: 6.0
 Stable tag: 4.0.0
 Requires PHP: 5.6.20
 
