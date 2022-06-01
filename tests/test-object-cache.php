@@ -183,12 +183,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 	public function test_incr_fails_if_existing_item_is_non_numeric(): void {
 		$this->object_cache->add( 'foo2', 'non-numeric' );
-		if ( PHP_MAJOR_VERSION === 8 ) {
-			$this->expectException( TypeError::class );
-		} else {
-			$this->expectNotice();
-		}
-
+		$this->expectNotice();
 		$this->object_cache->incr( 'foo2', 1 );
 	}
 
@@ -231,12 +226,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 	public function test_decr_fails_if_existing_item_is_non_numeric(): void {
 		$this->object_cache->add( 'foo2', 'non-numeric' );
-		if ( PHP_MAJOR_VERSION === 8 ) {
-			$this->expectException( TypeError::class );
-		} else {
-			$this->expectNotice();
-		}
-
+		$this->expectNotice();
 		$this->object_cache->decr( 'foo2', 1 );
 	}
 
