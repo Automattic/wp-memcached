@@ -172,22 +172,24 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 	public function test_incr_fails_if_non_numeric_value_is_passed(): void {
 		$this->object_cache->add( 'foo2', 1 );
-		try {
-			$incremented = $this->object_cache->incr( 'foo2', 'non-numeric' );
-			$this->fail( 'Incrementing should have failed due to non-numeric modifier.' );
-		} catch ( \Exception $e ) {
-			// Expected to come in here, no output needed.
+		if ( PHP_MAJOR_VERSION === 8 ) {
+			$this->expectException( TypeError::class );
+		} else {
+			$this->expectWarning();
 		}
+	
+		$this->object_cache->incr( 'foo2', 'non-numeric' );
 	}
 
 	public function test_incr_fails_if_existing_item_is_non_numeric(): void {
 		$this->object_cache->add( 'foo2', 'non-numeric' );
-		try {
-			$incremented = $this->object_cache->incr( 'foo2', 1 );
-			$this->fail( 'Incrementing should have failed due to non-numeric item.' );
-		} catch ( \Exception $e ) {
-			// Expected to come in here, no output needed.
+		if ( PHP_MAJOR_VERSION === 8 ) {
+			$this->expectException( TypeError::class );
+		} else {
+			$this->expectNotice();
 		}
+
+		$this->object_cache->incr( 'foo2', 1 );
 	}
 
 	public function test_incr_can_be_performed_per_group(): void {
