@@ -22,11 +22,25 @@ jobs:
           - "7.4"
           - "8.0"
         wordpress:
+          - "5.5.x"
+          - "5.6.x"
+          - "5.7.x"
+          - "5.8.x"
+          - "5.9.x"
           - "latest"
           - "nightly"
         multisite:
           - "yes"
           - "no"
+        exclude:
+          - php: "8.0"
+            wordpress: "5.5.x"
+          - php: "8.0"
+            wordpress: "5.6.x"
+          - php: "8.0"
+            wordpress: "5.7.x"
+          - php: "8.0"
+            wordpress: "5.8.x"
     steps:
       - name: Check out source code
         uses: actions/checkout@v3.0.2
@@ -50,7 +64,12 @@ jobs:
           else
             MULTISITE=0
           fi
-          ./bin/test.sh --wp "${{ matrix.wordpress }}" --php "${{ matrix.php }}" --multisite "${MULTISITE}" --order-by=random
+          if echo "${{ matrix.wordpress }}" | grep -qE '^5\.[5-8]'; then
+            PHPUNIT=7
+          else
+            PHPUNIT=9
+          fi
+          ./bin/test.sh --wp "${{ matrix.wordpress }}" --php "${{ matrix.php }}" --multisite "${MULTISITE}" --phpunit "${PHPUNIT}" --order-by=random
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v2

@@ -2,6 +2,8 @@
 /**
  * PHPUnit bootstrap file
  */
+require_once __DIR__ . '/../vendor/autoload.php';
+
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
 $_core_dir = getenv( 'WP_CORE_DIR' );
 
