@@ -7,12 +7,19 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	 */
 	private $object_cache;
 
-	public function setUp() {
-		$GLOBALS['memcached_servers'] = array( '127.0.0.1:11211', '127.0.0.1:11212' );
+	public function setUp(): void {
+		parent::setUp();
+		$host1 = getenv( 'MEMCACHED_HOST_1' );
+		$host2 = getenv( 'MEMCACHED_HOST_2' );
+
+		$host1 = $host1 ? "{$host1}:11211" : 'localhost:11211';
+		$host2 = $host2 ? "{$host2}:11211" : 'localhost:11212';
+
+		$GLOBALS['memcached_servers'] = array( $host1, $host2 );
 		$GLOBALS['wp_object_cache'] = $this->object_cache = new WP_Object_Cache();
 	}
 
-	public function tearDown() {
+	public function tearDown(): void {
 		$this->object_cache->flush();
 	}
 
@@ -165,22 +172,19 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 	public function test_incr_fails_if_non_numeric_value_is_passed(): void {
 		$this->object_cache->add( 'foo2', 1 );
-		try {
-			$incremented = $this->object_cache->incr( 'foo2', 'non-numeric' );
-			$this->fail( 'Incrementing should have failed due to non-numeric modifier.' );
-		} catch ( \Exception $e ) {
-			// Expected to come in here, no output needed.
+		if ( PHP_MAJOR_VERSION === 8 ) {
+			$this->expectException( TypeError::class );
+		} else {
+			$this->expectWarning();
 		}
+	
+		$this->object_cache->incr( 'foo2', 'non-numeric' );
 	}
 
 	public function test_incr_fails_if_existing_item_is_non_numeric(): void {
 		$this->object_cache->add( 'foo2', 'non-numeric' );
-		try {
-			$incremented = $this->object_cache->incr( 'foo2', 1 );
-			$this->fail( 'Incrementing should have failed due to non-numeric item.' );
-		} catch ( \Exception $e ) {
-			// Expected to come in here, no output needed.
-		}
+		$this->expectNotice();
+		$this->object_cache->incr( 'foo2', 1 );
 	}
 
 	public function test_incr_can_be_performed_per_group(): void {
@@ -211,22 +215,19 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 	public function test_decr_fails_if_non_numeric_value_is_passed(): void {
 		$this->object_cache->add( 'foo2', 1 );
-		try {
-			$decremented = $this->object_cache->decr( 'foo2', 'non-numeric' );
-			$this->fail( 'Decrementing should have failed due to non-numeric modifier.' );
-		} catch ( \Exception $e ) {
-			// Expected to come in here, no output needed.
+		if ( PHP_MAJOR_VERSION === 8 ) {
+			$this->expectException( TypeError::class );
+		} else {
+			$this->expectWarning();
 		}
+
+		$this->object_cache->decr( 'foo2', 'non-numeric' );
 	}
 
 	public function test_decr_fails_if_existing_item_is_non_numeric(): void {
 		$this->object_cache->add( 'foo2', 'non-numeric' );
-		try {
-			$decremented = $this->object_cache->decr( 'foo2', 1 );
-			$this->fail( 'Decrementing should have failed due to non-numeric item.' );
-		} catch ( \Exception $e ) {
-			// Expected to come in here, no output needed.
-		}
+		$this->expectNotice();
+		$this->object_cache->decr( 'foo2', 1 );
 	}
 
 	public function test_decr_can_be_performed_per_group(): void {
@@ -759,7 +760,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	// Tests for key.
 
 	public function test_key_returns_cache_key_for_default_group_if_no_group_passed(): void {
-		$this->assertContains( 'default:foo', $this->object_cache->key( 'foo', '') );
+		$this->assertStringContainsString( 'default:foo', $this->object_cache->key( 'foo', '') );
 	}
 
 	public function test_key_contains_global_prefix_when_using_global_group(): void {
@@ -767,13 +768,13 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		// Have to set global prefix here as without multi site it is set to the same value as blog prefix.
 		$this->object_cache->global_prefix = 'global_prefix';
-		$this->assertContains( $this->object_cache->global_prefix, $this->object_cache->key( 'foo', 'global-group') );
+		$this->assertStringContainsString( $this->object_cache->global_prefix, $this->object_cache->key( 'foo', 'global-group') );
 	}
 
 	public function test_key_contains_blog_prefix_when_using_non_global_group(): void {
 		// Have to set blog prefix here as without multi site it is set to the same value as global prefix.
 		$this->object_cache->blog_prefix = 'blog_prefix';
-		$this->assertContains( $this->object_cache->blog_prefix, $this->object_cache->key( 'foo', 'non-global-group') );
+		$this->assertStringContainsString( $this->object_cache->blog_prefix, $this->object_cache->key( 'foo', 'non-global-group') );
 	}
 
 	// Tests for replace.
@@ -1017,6 +1018,6 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	public function test_colorize_debug_line( $command, $expected_color ) {
 		$colorized = $this->object_cache->colorize_debug_line( $command );
 
-		$this->assertContains( $expected_color, $colorized );
+		$this->assertStringContainsString( $expected_color, $colorized );
 	}
 }

@@ -1,8 +1,10 @@
 language: php
 
+dist: focal
+
 php:
-    - "7.3"
     - "7.4"
+    - "8.0"
 
 services:
     - mysql
@@ -20,7 +22,7 @@ before_install:
     - sudo apt-get install zlib1g-dev
     - pecl channel-update pecl.php.net
     - pecl config-set preferred_state beta
-    - echo 'yes' | pecl install memcache-4.0.5.2
+    - if php -r 'echo PHP_MAJOR_VERSION;' | grep -q 7; then echo 'yes' | pecl install memcache-4.0.5.2; else echo 'yes' | pecl install memcache-8.0; fi
 
 install:
     - composer update --prefer-dist --prefer-stable
