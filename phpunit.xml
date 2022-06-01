@@ -7,24 +7,18 @@
         convertWarningsToExceptions="true"
 >
     <testsuites>
-        <testsuite>
+        <testsuite name="Unit Tests">
             <directory prefix="test-" suffix=".php">./tests/</directory>
         </testsuite>
     </testsuites>
 
-    <filter>
-        <whitelist addUncoveredFilesFromWhitelist="true">
+    <coverage>
+        <include>
             <file>./object-cache.php</file>
-            <exclude>
-                <directory>./vendor</directory>
-                <directory>./tests</directory>
-                <directory>./bin</directory>
-            </exclude>
-        </whitelist>
-    </filter>
-
-    <logging>
-        <log type="coverage-text" target="php://stdout" showUncoveredFiles="false"/>
-        <log type="coverage-clover" target="./clover.xml"/>
-    </logging>
+        </include>
+        <report>
+            <clover outputFile="clover.xml"/>
+            <text outputFile="php://stdout"/>
+        </report>
+    </coverage>
 </phpunit>

@@ -7,12 +7,19 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	 */
 	private $object_cache;
 
-	public function setUp() {
-		$GLOBALS['memcached_servers'] = array( '127.0.0.1:11211', '127.0.0.1:11212' );
+	public function setUp(): void {
+		parent::setUp();
+		$host1 = getenv( 'MEMCACHED_HOST_1' );
+		$host2 = getenv( 'MEMCACHED_HOST_2' );
+
+		$host1 = $host1 ? "{$host1}:11211" : 'localhost:11211';
+		$host2 = $host2 ? "{$host2}:11211" : 'localhost:11212';
+
+		$GLOBALS['memcached_servers'] = array( $host1, $host2 );
 		$GLOBALS['wp_object_cache'] = $this->object_cache = new WP_Object_Cache();
 	}
 
-	public function tearDown() {
+	public function tearDown(): void {
 		$this->object_cache->flush();
 	}
 
@@ -759,7 +766,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	// Tests for key.
 
 	public function test_key_returns_cache_key_for_default_group_if_no_group_passed(): void {
-		$this->assertContains( 'default:foo', $this->object_cache->key( 'foo', '') );
+		$this->assertStringContainsString( 'default:foo', $this->object_cache->key( 'foo', '') );
 	}
 
 	public function test_key_contains_global_prefix_when_using_global_group(): void {
@@ -767,13 +774,13 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		// Have to set global prefix here as without multi site it is set to the same value as blog prefix.
 		$this->object_cache->global_prefix = 'global_prefix';
-		$this->assertContains( $this->object_cache->global_prefix, $this->object_cache->key( 'foo', 'global-group') );
+		$this->assertStringContainsString( $this->object_cache->global_prefix, $this->object_cache->key( 'foo', 'global-group') );
 	}
 
 	public function test_key_contains_blog_prefix_when_using_non_global_group(): void {
 		// Have to set blog prefix here as without multi site it is set to the same value as global prefix.
 		$this->object_cache->blog_prefix = 'blog_prefix';
-		$this->assertContains( $this->object_cache->blog_prefix, $this->object_cache->key( 'foo', 'non-global-group') );
+		$this->assertStringContainsString( $this->object_cache->blog_prefix, $this->object_cache->key( 'foo', 'non-global-group') );
 	}
 
 	// Tests for replace.
@@ -1017,6 +1024,6 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	public function test_colorize_debug_line( $command, $expected_color ) {
 		$colorized = $this->object_cache->colorize_debug_line( $command );
 
-		$this->assertContains( $expected_color, $colorized );
+		$this->assertStringContainsString( $expected_color, $colorized );
 	}
 }
