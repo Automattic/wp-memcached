@@ -4,9 +4,16 @@ on:
   push:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  build:
-    name: Test
+  test:
+    name: "Run Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wordpress }}, multisite: ${{ matrix.multisite }})"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
