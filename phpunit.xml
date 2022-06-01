@@ -2,6 +2,7 @@
         bootstrap="tests/bootstrap.php"
         backupGlobals="false"
         colors="true"
+        cacheResult="false"
         convertErrorsToExceptions="true"
         convertNoticesToExceptions="true"
         convertWarningsToExceptions="true"
@@ -17,7 +18,7 @@
             <file>./object-cache.php</file>
         </include>
         <report>
-            <clover outputFile="clover.xml"/>
+            <clover outputFile="coverage/clover.xml"/>
             <text outputFile="php://stdout"/>
         </report>
     </coverage>

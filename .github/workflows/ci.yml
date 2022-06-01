@@ -1,0 +1,78 @@
+name: Build and Test
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: "Run Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wordpress }}, multisite: ${{ matrix.multisite }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - "7.4"
+          - "8.0"
+        wordpress:
+          - "5.5.x"
+          - "5.6.x"
+          - "5.7.x"
+          - "5.8.x"
+          - "5.9.x"
+          - "latest"
+          - "nightly"
+        multisite:
+          - "yes"
+          - "no"
+        exclude:
+          - php: "8.0"
+            wordpress: "5.5.x"
+          - php: "8.0"
+            wordpress: "5.6.x"
+          - php: "8.0"
+            wordpress: "5.7.x"
+          - php: "8.0"
+            wordpress: "5.8.x"
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3.0.2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@2.18.1
+        with:
+          coverage: none
+          php-version: ${{ matrix.php }}
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@2.1.0
+
+      - name: Create coverage directory
+        run: mkdir -m 0777 coverage
+
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.multisite }}" == "yes" ]; then
+            MULTISITE=1
+          else
+            MULTISITE=0
+          fi
+          if echo "${{ matrix.wordpress }}" | grep -qE '^5\.[5-8]'; then
+            PHPUNIT=7
+          else
+            PHPUNIT=9
+          fi
+          ./bin/test.sh --wp "${{ matrix.wordpress }}" --php "${{ matrix.php }}" --multisite "${MULTISITE}" --phpunit "${PHPUNIT}" --order-by=random
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v2
+        with:
+          files: coverage/clover.xml
+          flags: unittests
