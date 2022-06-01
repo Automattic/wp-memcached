@@ -1,0 +1,43 @@
+name: Build and Test
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - "7.4"
+          - "8.0"
+        wordpress:
+          - "latest"
+          - "nightly"
+        multisite:
+          - "yes"
+          - "no"
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3.0.2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@2.18.1
+        with:
+          coverage: none
+          php-version: ${{ matrix.php }}
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@2.1.0
+
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.multisite }}" == "yes" ]; then
+            MULTISITE=1
+          else
+            MULTISITE=0
+          fi
+          ./bin/test.sh --wp "${{ matrix.wordpress }}" --php "${{ matrix.php }}" --multisite "${MULTISITE}" --order-by=random
