@@ -17,7 +17,9 @@ if ( ! $_core_dir ) {
 require_once $_tests_dir . '/includes/functions.php';
 
 // Copy across the drop-in plugin.
-copy( dirname( __DIR__ ) . '/object-cache.php', $_core_dir . '/wp-content/object-cache.php' );
+$fname   = dirname( __DIR__ ) . '/object-cache.php';
+$content = "<?php require_once '{$fname}';";
+file_put_contents( $_core_dir . '/wp-content/object-cache.php', $content );
 
 // Start up the WP testing environment.
 require $_tests_dir . '/includes/bootstrap.php';
