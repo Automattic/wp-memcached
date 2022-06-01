@@ -17,7 +17,7 @@
             <file>./object-cache.php</file>
         </include>
         <report>
-            <clover outputFile="clover.xml"/>
+            <clover outputFile="coverage/clover.xml"/>
             <text outputFile="php://stdout"/>
         </report>
     </coverage>

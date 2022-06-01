@@ -40,6 +40,9 @@ jobs:
       - name: Install PHP Dependencies
         uses: ramsey/composer-install@2.1.0
 
+      - name: Create coverage directory
+        run: mkdir -m 0777 coverage
+
       - name: Run tests
         run: |
           if [ "${{ matrix.multisite }}" == "yes" ]; then
@@ -48,3 +51,9 @@ jobs:
             MULTISITE=0
           fi
           ./bin/test.sh --wp "${{ matrix.wordpress }}" --php "${{ matrix.php }}" --multisite "${MULTISITE}" --order-by=random
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v2
+        with:
+          files: coverage/clover.xml
+          flags: unittests
