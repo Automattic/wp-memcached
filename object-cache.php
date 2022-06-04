@@ -76,6 +76,12 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	return $wp_object_cache->get( $key, $group, $force, $found );
 }
 
+function wp_cache_get_multiple( $keys, $group = '', $force = false ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->get_multiple( $keys, $group, $force );
+}
+
 /**
  * Retrieve multiple cache entries
  *
@@ -565,6 +571,58 @@ class WP_Object_Cache {
 
 			$elapsed = $this->timer_stop();
 			$this->group_ops_stats( 'get_multi', $keys, $group, null, $elapsed );
+		}
+
+		$this->cache = array_merge( $this->cache, $return_cache );
+
+		return $return;
+	}
+
+	public function get_multiple( $ids, $group = 'default', $force = false ) {
+		$mc = $this->get_mc( $group );
+
+		$no_mc = in_array( $group, $this->no_mc_groups );
+
+		$uncached_keys = array();
+
+		$return = array();
+		$return_cache = array();
+
+		foreach ( $ids as $id ) {
+			$key = $this->key( $id, $group );
+
+			if ( isset( $this->cache[ $key ] ) && ( ! $force || $no_mc ) ) {
+				$value         = $this->cache[ $key ]['found'] ? $this->cache[ $key ]['value'] : false;
+				$return[ $id ] = is_object( $value ) ? clone $value : $value;
+			} else if ( $no_mc ) {
+				$return[ $id ]        = false;
+				$return_cache[ $key ] = [
+					'value' => false,
+					'found' => false,
+				];
+			} else {
+				$uncached_keys[ $id ] = $key;
+			}
+		}
+
+		if ( $uncached_keys ) {
+			$this->timer_start();
+			$uncached_keys_list = array_values( $uncached_keys );
+			$values             = $mc->get( $uncached_keys_list );
+			$elapsed            = $this->timer_stop();
+
+			$this->group_ops_stats( 'get_multiple', $uncached_keys_list, $group, null, $elapsed );
+
+			foreach ( $uncached_keys as $id => $key ) {
+				$found = array_key_exists( $key, $values );
+				$value = $found ? $values[ $key ] : false;
+
+				$return[ $id ]        = $value;
+				$return_cache[ $key ] = [
+					'value' => $value,
+					'found' => $found,
+				];
+			}
 		}
 
 		$this->cache = array_merge( $this->cache, $return_cache );
