@@ -76,3 +76,4 @@ jobs:
         with:
           files: coverage/clover.xml
           flags: unittests
+        if: ${{ matrix.wordpress == 'latest' }}
