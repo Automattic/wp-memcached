@@ -1114,4 +1114,22 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertSame( $expected, $found );
 	}
+
+	public function test_wp_cache_get_multiple_np() {
+		$group = 'do-not-persist-me';
+
+		$added = $this->object_cache->set( 'foo', 'data 1', $group );
+		$this->assertTrue( $added );
+
+		$this->object_cache->add_non_persistent_groups( [ $group ] );
+
+		$this->object_cache->cache = [];
+
+		$expected = [
+			'foo' => false,
+		];
+
+		$actual = wp_cache_get_multiple( [ 'foo' ], $group );
+		$this->assertSame( $expected, $actual );
+	}
 }
