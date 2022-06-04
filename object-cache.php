@@ -22,6 +22,12 @@ function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
 	return $wp_object_cache->add( $key, $data, $group, $expire );
 }
 
+function wp_cache_add_multiple( array $data, $group = '', $expire = 0 ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->add_multiple( $data, $group, $expire );
+}
+
 function wp_cache_incr( $key, $n = 1, $group = '' ) {
 	global $wp_object_cache;
 
@@ -44,6 +50,12 @@ function wp_cache_delete( $key, $group = '' ) {
 	global $wp_object_cache;
 
 	return $wp_object_cache->delete( $key, $group );
+}
+
+function wp_cache_delete_multiple( array $keys, $group = '' ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->delete_multiple( $keys, $group );
 }
 
 function wp_cache_flush() {
@@ -96,6 +108,12 @@ function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
 	} else {
 		return $wp_object_cache->delete( $key, $group );
 	}
+}
+
+function wp_cache_set_multiple( array $data, $group = '', $expire = 0 ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->set_multiple( $data, $group, $expire );
 }
 
 function wp_cache_switch_to_blog( $blog_id ) {
@@ -204,6 +222,16 @@ class WP_Object_Cache {
 		return $result;
 	}
 
+	public function add_multiple( array $data, $group = '', $expire = 0 ) {
+		$values = array();
+
+		foreach ( $data as $key => $value ) {
+			$values[ $key ] = $this->add( $key, $value, $group, $expire );
+		}
+
+		return $values;
+	}
+
 	function add_global_groups( $groups ) {
 		if ( ! is_array( $groups ) ) {
 			$groups = (array) $groups;
@@ -277,6 +305,16 @@ class WP_Object_Cache {
 		}
 
 		return $result;
+	}
+
+	public function delete_multiple( array $keys, $group = '' ) {
+		$values = array();
+
+		foreach ( $keys as $key ) {
+			$values[ $key ] = $this->delete( $key, $group );
+		}
+
+		return $values;
 	}
 
 	// Gets number from all default servers, replicating if needed
@@ -625,6 +663,16 @@ class WP_Object_Cache {
 		$this->cache[ $key ][ 'found' ] = $result;
 
 		return $result;
+	}
+
+	public function set_multiple( array $data, $group = '', $expire = 0 ) {
+		$values = array();
+
+		foreach ( $data as $key => $value ) {
+			$values[ $key ] = $this->set( $key, $value, $group, $expire );
+		}
+
+		return $values;
 	}
 
 	function switch_to_blog( $blog_id ) {
