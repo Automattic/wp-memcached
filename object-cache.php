@@ -91,7 +91,7 @@ function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
 function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
-	if ( defined( 'WP_INSTALLING' ) == false ) {
+	if ( defined( 'WP_INSTALLING' ) === false ) {
 		return $wp_object_cache->set( $key, $data, $group, $expire );
 	} else {
 		return $wp_object_cache->delete( $key, $group );
@@ -122,6 +122,7 @@ class WP_Object_Cache {
 	var $no_mc_groups = array();
 
 	var $cache       = array();
+	/** @var Memcache[] */
 	var $mc          = array();
 	var $default_mcs = array();
 	var $stats       = array();
@@ -164,7 +165,7 @@ class WP_Object_Cache {
 			return false;
 		}
 
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
@@ -223,7 +224,7 @@ class WP_Object_Cache {
 
 	function incr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$incremented = $mc->increment( $key, $n );
 
@@ -237,7 +238,7 @@ class WP_Object_Cache {
 
 	function decr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$decremented = $mc->decrement( $key, $n );
 		$this->cache[ $key ] = [
@@ -263,7 +264,7 @@ class WP_Object_Cache {
 			return true;
 		}
 
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$this->timer_start();
 		$result = $mc->delete( $key );
@@ -407,7 +408,7 @@ class WP_Object_Cache {
 
 	function get( $id, $group = 'default', $force = false, &$found = null ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 		$found = true;
 
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
@@ -476,7 +477,7 @@ class WP_Object_Cache {
 		);
 
 		foreach ( $groups as $group => $ids ) {
-			$mc =& $this->get_mc( $group );
+			$mc = $this->get_mc( $group );
 			$keys = array();
 			$this->timer_start();
 
@@ -563,7 +564,7 @@ class WP_Object_Cache {
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		if ( is_object( $data ) ) {
 			$data = clone $data;
@@ -612,7 +613,7 @@ class WP_Object_Cache {
 			$expire = $this->default_expiration;
 		}
 
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$size = $this->get_data_size( $data );
 		$this->timer_start();
@@ -795,7 +796,11 @@ class WP_Object_Cache {
 		return $this->colorize_debug_line( $line, $bt_link );
 	}
 
-	function &get_mc( $group ) {
+	/**
+	 * @param int|string $group
+	 * @return Memcache
+	 */
+	function get_mc( $group ) {
 		if ( isset( $this->mc[ $group ] ) ) {
 			return $this->mc[ $group ];
 		}
