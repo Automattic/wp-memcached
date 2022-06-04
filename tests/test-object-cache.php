@@ -12,8 +12,8 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$host1 = getenv( 'MEMCACHED_HOST_1' );
 		$host2 = getenv( 'MEMCACHED_HOST_2' );
 
-		$host1 = $host1 ? "{$host1}:11211" : 'localhost:11211';
-		$host2 = $host2 ? "{$host2}:11211" : 'localhost:11212';
+		$host1 = $host1 ? "{$host1}" : 'localhost:11211';
+		$host2 = $host2 ? "{$host2}" : 'localhost:11212';
 
 		$GLOBALS['memcached_servers'] = array( $host1, $host2 );
 		$GLOBALS['wp_object_cache'] = $this->object_cache = new WP_Object_Cache();
