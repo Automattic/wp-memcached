@@ -41,6 +41,25 @@ jobs:
             wordpress: "5.7.x"
           - php: "8.0"
             wordpress: "5.8.x"
+    services:
+      mysql:
+        image: mariadb:10.3
+        ports:
+          - "3306:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: wordpress
+          MARIADB_INITDB_SKIP_TZINFO: 1
+          MYSQL_USER: wordpress
+          MYSQL_PASSWORD: wordpress
+          MYSQL_DATABASE: wordpress_test
+      memcached_1:
+        image: memcached:alpine
+        ports:
+          - "11211:11211"
+      memcached_2:
+        image: memcached:alpine
+        ports:
+          - "11212:11211"
     steps:
       - name: Check out source code
         uses: actions/checkout@v3.0.2
@@ -48,28 +67,36 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@2.18.1
         with:
-          coverage: none
+          coverage: xdebug
           php-version: ${{ matrix.php }}
 
       - name: Install PHP Dependencies
         uses: ramsey/composer-install@2.1.0
 
-      - name: Create coverage directory
-        run: mkdir -m 0777 coverage
+      - name: Install WP Test Suite
+        run: ./.github/install-wp-tests.sh
+        env:
+          WP_VERSION: ${{ matrix.wordpress }}
+          DB_NAME: wordpress_test
+          DB_USER: wordpress
+          DB_PASSWORD: wordpress
+          DH_HOST: 127.0.0.1
 
       - name: Run tests
         run: |
           if [ "${{ matrix.multisite }}" == "yes" ]; then
-            MULTISITE=1
-          else
-            MULTISITE=0
+            export WP_MULTISITE=1
           fi
           if echo "${{ matrix.wordpress }}" | grep -qE '^5\.[5-8]'; then
-            PHPUNIT=7
+            wget -q -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-7.phar
           else
-            PHPUNIT=9
+            wget -q -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-9.phar
           fi
-          ./bin/test.sh --wp "${{ matrix.wordpress }}" --php "${{ matrix.php }}" --multisite "${MULTISITE}" --phpunit "${PHPUNIT}" --order-by=random
+          chmod +x /usr/local/bin/phpunit
+          phpunit
+        env:
+          MEMCACHED_HOST_1: 127.0.0.1:11211
+          MEMCACHED_HOST_2: 127.0.0.1:11212
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v2
