@@ -99,7 +99,7 @@ jobs:
           MEMCACHED_HOST_2: 127.0.0.1:11212
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: coverage/clover.xml
           flags: unittests
