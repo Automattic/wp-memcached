@@ -1132,4 +1132,45 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$actual = wp_cache_get_multiple( [ 'foo' ], $group );
 		$this->assertSame( $expected, $actual );
 	}
+
+	public function test_wp_cache_get_multiple_consistency() {
+		$values = [
+			'empty-string' => '',
+			'empty-array'  => [],
+			'zero'         => 0,
+			'false'        => false,
+			'null'         => null,
+		];
+
+		foreach ( $values as $key => $value ) {
+			$result = wp_cache_set( $key, $value, 'group' );
+			self::assertTrue( $result );
+		}
+
+		$actual = wp_cache_get_multiple( array_keys( $values ), 'group', true );
+		self::assertSame( $values, $actual );
+	}
+
+	/**
+	 * @dataProvider data_wp_cache_get_consistency
+	 */
+	public function test_wp_cache_get_consistency( $value ) {
+		$result = wp_cache_set( 'key', $value, 'group' );
+		self::assertTrue( $result );
+
+		$found  = false;
+		$actual = wp_cache_get( 'key', 'group', true, $found );
+		self::assertTrue( $found );
+		self::assertSame( $value, $actual );
+	}
+
+	public function data_wp_cache_get_consistency() {
+		return [
+			'empty string' => [ '' ],
+			'empty array'  => [ [] ],
+			'zero'         => [ 0 ],
+			'false'        => [ false ],
+			'null'         => [ null ],
+		];
+	}
 }
