@@ -24,7 +24,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	}
 
 	public function test_server_without_port() {
-		$GLOBALS['memcached_servers'] = array( 'localhost' );
+		$GLOBALS['memcached_servers'] = array( 'localhost', 'localhost:0' );
 		new WP_Object_Cache(); // NOSONAR
 		self::assertTrue( true );
 	}
