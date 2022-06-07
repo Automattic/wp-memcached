@@ -858,10 +858,11 @@ class WP_Object_Cache {
 					$node = $server;
 					$port = 0;
 				} else {
-					list ( $node, $port ) = explode( ':', $server );
-
-					if ( ! $port ) {
+					if ( false === strpos( $server, ':' ) ) {
+						$node = $server;
 						$port = ini_get( 'memcache.default_port' );
+					} else {
+						list ( $node, $port ) = explode( ':', $server, 2 );
 					}
 
 					$port = intval( $port );
