@@ -858,10 +858,11 @@ class WP_Object_Cache {
 					$node = $server;
 					$port = 0;
 				} else {
-					list ( $node, $port ) = explode( ':', $server );
-
-					if ( ! $port ) {
+					if ( false === strpos( $server, ':' ) ) {
+						$node = $server;
 						$port = ini_get( 'memcache.default_port' );
+					} else {
+						list ( $node, $port ) = explode( ':', $server, 2 );
 					}
 
 					$port = intval( $port );
@@ -918,6 +919,7 @@ class WP_Object_Cache {
 
 		$keys = $this->strip_memcached_keys( $keys );
 
+		// @codeCoverageIgnoreStart
 		if ( $time > $this->slow_op_microseconds && 'get_multi' !== $op ) {
 			$this->increment_stat( 'slow-ops' );
 			$backtrace = null;
@@ -926,6 +928,7 @@ class WP_Object_Cache {
 			}
 			$this->group_ops['slow-ops'][] = array( $op, $keys, $size, $time, $comment, $group, $backtrace );
 		}
+		// @codeCoverageIgnoreEnd
 
 		$this->group_ops[ $group ][] = array( $op, $keys, $size, $time, $comment );
 	}

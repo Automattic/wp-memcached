@@ -23,6 +23,12 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->object_cache->flush();
 	}
 
+	public function test_server_without_port() {
+		$GLOBALS['memcached_servers'] = array( 'localhost', 'localhost:0' );
+		new WP_Object_Cache(); // NOSONAR
+		self::assertTrue( true );
+	}
+
 	// Tests for adding.
 
 	public function test_add_returns_true_if_added_successfully(): void {
