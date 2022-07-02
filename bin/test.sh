@@ -140,8 +140,8 @@ docker run \
     -e MYSQL_DB="${MYSQL_DATABASE}" \
     -e MYSQL_HOST \
     -e XDEBUG_MODE=coverage \
-    -e MEMCACHED_HOST_1 \
-    -e MEMCACHED_HOST_2 \
+    -e MEMCACHED_HOST_1="${MEMCACHED_HOST_1}:11211" \
+    -e MEMCACHED_HOST_2="${MEMCACHED_HOST_2}:11211" \
     ${DOCKER_OPTIONS} \
     -v "$(pwd):/home/circleci/project" \
     ghcr.io/automattic/vip-container-images/wp-test-runner:latest \

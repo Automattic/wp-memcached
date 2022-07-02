@@ -13,37 +13,29 @@ permissions:
 
 jobs:
   test:
-    name: "Run Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wordpress }}, multisite: ${{ matrix.multisite }})"
+    name: "Run Tests (PHP ${{ matrix.config.php }}, WP ${{ matrix.config.wp }}, multisite: ${{ matrix.config.ms }})"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        php:
-          - "7.4"
-          - "8.0"
-        wordpress:
-          - "5.5.x"
-          - "5.6.x"
-          - "5.7.x"
-          - "5.8.x"
-          - "5.9.x"
-          - "latest"
-          - "nightly"
-        multisite:
-          - "yes"
-          - "no"
-        exclude:
-          - php: "8.0"
-            wordpress: "5.5.x"
-          - php: "8.0"
-            wordpress: "5.6.x"
-          - php: "8.0"
-            wordpress: "5.7.x"
-          - php: "8.0"
-            wordpress: "5.8.x"
+        config:
+          - { wp: '5.5.x',  ms: 'no',  php: '7.4', phpunit: '7' }
+          - { wp: '5.5.x',  ms: 'yes', php: '7.4', phpunit: '7' }
+          - { wp: '5.6.x',  ms: 'no',  php: '7.4', phpunit: '7' }
+          - { wp: '5.6.x',  ms: 'yes', php: '7.4', phpunit: '7' }
+          - { wp: '5.7.x',  ms: 'no',  php: '7.4', phpunit: '7' }
+          - { wp: '5.7.x',  ms: 'yes', php: '7.4', phpunit: '7' }
+          - { wp: '5.8.x',  ms: 'no',  php: '7.4', phpunit: '7' }
+          - { wp: '5.8.x',  ms: 'yes', php: '7.4', phpunit: '7' }
+          - { wp: '5.9.x',  ms: 'no',  php: '7.4', phpunit: '7' }
+          - { wp: '5.9.x',  ms: 'yes', php: '7.4', phpunit: '7' }
+          - { wp: latest,   ms: 'no',  php: '8.0', phpunit: '9', coverage: 'yes' }
+          - { wp: latest,   ms: 'yes', php: '8.0', phpunit: '9', coverage: 'yes' }
+          - { wp: nightly,  ms: 'no',  php: '8.0', phpunit: '9' }
+          - { wp: nightly,  ms: 'yes', php: '8.0', phpunit: '9' }
     services:
       mysql:
-        image: mariadb:10.3
+        image: ghcr.io/automattic/vip-container-images/mariadb-lite:10.3
         ports:
           - "3306:3306"
         env:
@@ -64,36 +56,51 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v3.0.2
 
+      - name: Set up coverage reporting parameters
+        id: coverage
+        run: |
+          if [ "${{ matrix.config.coverage }}" = "yes" ]; then
+            echo "::set-output name=coverage::xdebug"
+          else
+            echo "::set-output name=coverage::none"
+          fi
+
       - name: Set up PHP
         uses: shivammathur/setup-php@2.19.1
         with:
-          coverage: xdebug
-          php-version: ${{ matrix.php }}
+          coverage: ${{ steps.coverage.outputs.coverage }}
+          php-version: ${{ matrix.config.php }}
+        env:
+          fail-fast: 'true'
+
+      - name: Install PHPUnit
+        run: |
+          wget -q -O /usr/local/bin/phpunit "https://phar.phpunit.de/phpunit-${{ matrix.config.phpunit }}.phar"
+          chmod +x /usr/local/bin/phpunit
 
       - name: Install PHP Dependencies
         uses: ramsey/composer-install@2.1.0
 
-      - name: Install WP Test Suite
-        run: ./.github/install-wp-tests.sh
-        env:
-          WP_VERSION: ${{ matrix.wordpress }}
-          DB_NAME: wordpress_test
-          DB_USER: wordpress
-          DB_PASSWORD: wordpress
-          DH_HOST: 127.0.0.1
+      - name: Set up WordPress and WordPress Test Library
+        uses: sjinks/setup-wordpress-test-library@1.1.4
+        with:
+          version: ${{ matrix.config.wp }}
+
+      - name: Set up multisite mode
+        run: echo "WP_MULTISITE=1" >> $GITHUB_ENV
+        if: matrix.config.ms == 'yes'
+
+      - name: Verify MariaDB connection
+        run: mysqladmin ping -h 127.0.0.1 -P 3306 --silent
+        timeout-minutes: 1
 
       - name: Run tests
         run: |
-          if [ "${{ matrix.multisite }}" == "yes" ]; then
-            export WP_MULTISITE=1
+          OPTIONS=
+          if [ "${{ steps.coverage.outputs.coverage }}" != 'none' ]; then
+            OPTIONS="${OPTIONS} --coverage-clover=coverage/clover.xml"
           fi
-          if echo "${{ matrix.wordpress }}" | grep -qE '^5\.[5-8]'; then
-            wget -q -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-7.phar
-          else
-            wget -q -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-9.phar
-          fi
-          chmod +x /usr/local/bin/phpunit
-          phpunit
+          phpunit ${OPTIONS}
         env:
           MEMCACHED_HOST_1: 127.0.0.1:11211
           MEMCACHED_HOST_2: 127.0.0.1:11212
@@ -103,4 +110,4 @@ jobs:
         with:
           files: coverage/clover.xml
           flags: unittests
-        if: ${{ matrix.wordpress == 'latest' }}
+        if: ${{ steps.coverage.outputs.coverage != 'none' }}
