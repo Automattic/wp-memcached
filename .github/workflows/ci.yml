@@ -29,6 +29,10 @@ jobs:
           - { wp: '5.8.x',  ms: 'yes', php: '7.4', phpunit: '7' }
           - { wp: '5.9.x',  ms: 'no',  php: '7.4', phpunit: '7' }
           - { wp: '5.9.x',  ms: 'yes', php: '7.4', phpunit: '7' }
+          - { wp: latest,   ms: 'no',  php: '7.4', phpunit: '9' }
+          - { wp: latest,   ms: 'yes', php: '7.4', phpunit: '9' }
+          - { wp: nightly,  ms: 'no',  php: '7.4', phpunit: '9' }
+          - { wp: nightly,  ms: 'yes', php: '7.4', phpunit: '9' }
           - { wp: latest,   ms: 'no',  php: '8.0', phpunit: '9', coverage: 'yes' }
           - { wp: latest,   ms: 'yes', php: '8.0', phpunit: '9', coverage: 'yes' }
           - { wp: nightly,  ms: 'no',  php: '8.0', phpunit: '9' }
