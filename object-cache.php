@@ -600,7 +600,7 @@ class WP_Object_Cache {
 	public function get_multiple( $ids, $group = 'default', $force = false ) {
 		$mc = $this->get_mc( $group );
 
-		$no_mc = in_array( $group, $this->no_mc_groups );
+		$no_mc = in_array( $group, $this->no_mc_groups, true );
 
 		$uncached_keys = array();
 
@@ -771,6 +771,7 @@ class WP_Object_Cache {
 			'get' => 'green',
 			'get_local' => 'lightgreen',
 			'get_multi' => 'fuchsia',
+			'get_multiple' => 'navy',
 			'set' => 'purple',
 			'set_local' => 'orchid',
 			'add' => 'blue',
