@@ -3,8 +3,8 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 3.2.2
-Plugin URI: http://wordpress.org/extend/plugins/memcached/
+Version: 4.0.0
+Plugin URI: https://wordpress.org/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz, Andy Skelton
 
 Install this file to wp-content/object-cache.php
@@ -55,6 +55,12 @@ function wp_cache_flush() {
 function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	global $wp_object_cache;
 
+	$value = apply_filters( 'pre_wp_cache_get', false, $key, $group, $force );
+	if ( false !== $value ) {
+		$found = true;
+		return $value;
+	}
+
 	return $wp_object_cache->get( $key, $group, $force, $found );
 }
 
@@ -85,7 +91,7 @@ function wp_cache_replace( $key, $data, $group = '', $expire = 0 ) {
 function wp_cache_set( $key, $data, $group = '', $expire = 0 ) {
 	global $wp_object_cache;
 
-	if ( defined( 'WP_INSTALLING' ) == false ) {
+	if ( defined( 'WP_INSTALLING' ) === false ) {
 		return $wp_object_cache->set( $key, $data, $group, $expire );
 	} else {
 		return $wp_object_cache->delete( $key, $group );
@@ -115,11 +121,17 @@ class WP_Object_Cache {
 
 	var $no_mc_groups = array();
 
-	var $cache     = array();
-	var $mc        = array();
-	var $stats     = array();
-	var $group_ops = array();
+	var $cache       = array();
+	/** @var Memcache[] */
+	var $mc          = array();
+	var $default_mcs = array();
+	var $stats       = array();
+	var $group_ops   = array();
 
+	var $flush_group         = 'WP_Object_Cache';
+	var $global_flush_group  = 'WP_Object_Cache_global';
+	var $flush_key           = "flush_number_v4";
+	var $old_flush_key       = "flush_number";
 	var $flush_number        = array();
 	var $global_flush_number = null;
 
@@ -153,7 +165,7 @@ class WP_Object_Cache {
 			return false;
 		}
 
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$expire = intval( $expire );
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
@@ -212,7 +224,7 @@ class WP_Object_Cache {
 
 	function incr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$incremented = $mc->increment( $key, $n );
 
@@ -226,7 +238,7 @@ class WP_Object_Cache {
 
 	function decr( $id, $n = 1, $group = 'default' ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$decremented = $mc->decrement( $key, $n );
 		$this->cache[ $key ] = [
@@ -252,7 +264,7 @@ class WP_Object_Cache {
 			return true;
 		}
 
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$this->timer_start();
 		$result = $mc->delete( $key );
@@ -267,36 +279,136 @@ class WP_Object_Cache {
 		return $result;
 	}
 
+	// Gets number from all default servers, replicating if needed
+	function get_max_flush_number( $group ) {
+		$key = $this->key( $this->flush_key, $group );
+
+		$values = array();
+		$size = 19; // size of microsecond timestamp serialized
+		foreach ( $this->default_mcs as $i => $mc ) {
+			$flags = false;
+			$this->timer_start();
+			$values[ $i ] = $mc->get( $key, $flags );
+			$elapsed = $this->timer_stop();
+
+			if ( empty( $values[ $i ] ) ) {
+				$this->group_ops_stats( 'get_flush_number', $key, $group, null, $elapsed, 'not_in_memcache' );
+			} else {
+				$this->group_ops_stats( 'get_flush_number', $key, $group, $size, $elapsed, 'memcache' );
+			}
+		}
+
+		$max = max( $values );
+
+		if ( ! $max > 0 ) {
+			return false;
+		}
+
+		// Replicate to servers not having the max.
+		$expire = 0;
+		foreach ( $this->default_mcs as $i => $mc ) {
+			if ( $values[ $i ] < $max ) {
+				$this->timer_start();
+				$mc->set( $key, $max, false, $expire );
+				$elapsed = $this->timer_stop();
+				$this->group_ops_stats( 'set_flush_number', $key, $group, $size, $elapsed, 'replication_repair' );
+			}
+		}
+
+		return $max;
+	}
+
+	function set_flush_number( $value, $group ) {
+		$key = $this->key( $this->flush_key, $group );
+		$expire = 0;
+		$size = 19;
+		foreach ( $this->default_mcs as $i => $mc ) {
+			$this->timer_start();
+			$mc->set( $key, $value, false, $expire );
+			$elapsed = $this->timer_stop();
+			$this->group_ops_stats( 'set_flush_number', $key, $group, $size, $elapsed, 'replication' );
+		}
+	}
+
+	function get_flush_number( $group ) {
+		$flush_number = $this->get_max_flush_number( $group );
+		// What if there is no v4 flush number?
+		if ( empty( $flush_number ) ) {
+			// Look for the v3 flush number key.
+			$flush_number = intval( $this->get( $this->old_flush_key, $group ) );
+			if ( !empty( $flush_number ) ) {
+				// Found v3 flush number. Upgrade to v4 with replication.
+				$this->set_flush_number( $flush_number, $group );
+				// Delete v3 key so we can't later restore it and find stale keys.
+			} else {
+				// No flush number found anywhere. Make a new one. This flushes the cache.
+				$flush_number = $this->new_flush_number();
+				$this->set_flush_number( $flush_number, $group );
+			}
+		}
+
+		return $flush_number;
+	}
+
+	function get_global_flush_number() {
+		if ( ! isset( $this->global_flush_number ) ) {
+			$this->global_flush_number = $this->get_flush_number( $this->global_flush_group );
+		}
+		return $this->global_flush_number;
+	}
+
+	function get_blog_flush_number() {
+		if ( ! isset( $this->flush_number[ $this->blog_prefix ] ) ) {
+			$this->flush_number[ $this->blog_prefix ] = $this->get_flush_number( $this->flush_group );
+		}
+		return $this->flush_number[ $this->blog_prefix ];
+	}
+
 	function flush() {
 		// Do not use the memcached flush method. It acts on an
 		// entire memcached server, affecting all sites.
 		// Flush is also unusable in some setups, e.g. twemproxy.
 		// Instead, rotate the key prefix for the current site.
-		// Global keys are rotated when flushing on the main site.
+		// Global keys are rotated when flushing on any network's
+		// main site.
 		$this->cache = array();
 
-		$this->rotate_site_keys();
+		$flush_number = $this->new_flush_number();
+
+		$this->rotate_site_keys( $flush_number );
 
 		if ( function_exists( 'is_main_site' ) && is_main_site() ) {
-			$this->rotate_global_keys();
+			$this->rotate_global_keys( $flush_number );
 		}
 	}
 
-	function rotate_site_keys() {
-		$this->add( 'flush_number', intval( microtime( true ) * 1e6 ), 'WP_Object_Cache' );
+	function rotate_site_keys( $flush_number = null ) {
+		if ( is_null( $flush_number ) ) {
+			$flush_number = $this->new_flush_number();
+		}
 
-		$this->flush_number[ $this->blog_prefix ] = $this->incr( 'flush_number', 1, 'WP_Object_Cache' );
+		$this->set_flush_number( $flush_number, $this->flush_group );
+
+		$this->flush_number[ $this->blog_prefix ] = $flush_number;
 	}
 
-	function rotate_global_keys() {
-		$this->add( 'flush_number', intval( microtime( true ) * 1e6 ), 'WP_Object_Cache_global' );
+	function rotate_global_keys( $flush_number = null ) {
+		if ( is_null( $flush_number ) ) {
+			$flush_number = $this->new_flush_number();
+		}
 
-		$this->global_flush_number = $this->incr( 'flush_number', 1, 'WP_Object_Cache_global' );
+		$this->set_flush_number( $flush_number, $this->global_flush_group );
+
+		$this->global_flush_number = $flush_number;
+	}
+
+	function new_flush_number() {
+		return intval( microtime( true ) * 1e6 );
 	}
 
 	function get( $id, $group = 'default', $force = false, &$found = null ) {
 		$key = $this->key( $id, $group );
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 		$found = true;
 
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
@@ -365,7 +477,7 @@ class WP_Object_Cache {
 		);
 
 		foreach ( $groups as $group => $ids ) {
-			$mc =& $this->get_mc( $group );
+			$mc = $this->get_mc( $group );
 			$keys = array();
 			$this->timer_start();
 
@@ -417,31 +529,14 @@ class WP_Object_Cache {
 	}
 
 	function flush_prefix( $group ) {
-		if ( 'WP_Object_Cache' === $group || 'WP_Object_Cache_global' === $group ) {
+		if ( $group === $this->flush_group || $group === $this->global_flush_group ) {
 			// Never flush the flush numbers.
 			$number = '_';
 		} elseif ( false !== array_search( $group, $this->global_groups ) ) {
-			if ( ! isset( $this->global_flush_number ) ) {
-				$this->global_flush_number = intval( $this->get( 'flush_number', 'WP_Object_Cache_global' ) );
-			}
-
-			if ( 0 === $this->global_flush_number ) {
-				$this->rotate_global_keys();
-			}
-
-			$number = $this->global_flush_number;
+			$number = $this->get_global_flush_number();
 		} else {
-			if ( ! isset( $this->flush_number[ $this->blog_prefix ] ) ) {
-				$this->flush_number[ $this->blog_prefix ] = intval( $this->get( 'flush_number', 'WP_Object_Cache' ) );
-			}
-
-			if ( 0 === $this->flush_number[ $this->blog_prefix ] ) {
-				$this->rotate_site_keys();
-			}
-
-			$number = $this->flush_number[ $this->blog_prefix ];
+			$number = $this->get_blog_flush_number();
 		}
-
 		return $number . ':';
 	}
 
@@ -469,7 +564,7 @@ class WP_Object_Cache {
 		if ( 0 === $expire || $expire > $this->max_expiration ) {
 			$expire = $this->default_expiration;
 		}
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		if ( is_object( $data ) ) {
 			$data = clone $data;
@@ -518,7 +613,7 @@ class WP_Object_Cache {
 			$expire = $this->default_expiration;
 		}
 
-		$mc =& $this->get_mc( $group );
+		$mc = $this->get_mc( $group );
 
 		$size = $this->get_data_size( $data );
 		$this->timer_start();
@@ -615,7 +710,7 @@ class WP_Object_Cache {
 			echo '</h2>';
 		}
 
-		echo "<ul class='debug-menu-links'>\n";
+		echo "<ul class='debug-menu-links' style='clear:left;font-size:14px;'>\n";
 		$groups = array_keys( $this->group_ops );
 		usort( $groups, 'strnatcasecmp' );
 
@@ -701,7 +796,11 @@ class WP_Object_Cache {
 		return $this->colorize_debug_line( $line, $bt_link );
 	}
 
-	function &get_mc( $group ) {
+	/**
+	 * @param int|string $group
+	 * @return Memcache
+	 */
+	function get_mc( $group ) {
 		if ( isset( $this->mc[ $group ] ) ) {
 			return $this->mc[ $group ];
 		}
@@ -754,15 +853,16 @@ class WP_Object_Cache {
 		foreach ( $buckets as $bucket => $servers ) {
 			$this->mc[ $bucket ] = new Memcache();
 
-			foreach ( $servers as $server  ) {
+			foreach ( $servers as $i => $server  ) {
 				if ( 'unix://' == substr( $server, 0, 7 ) ) {
 					$node = $server;
 					$port = 0;
 				} else {
-					list ( $node, $port ) = explode( ':', $server );
-
-					if ( ! $port ) {
+					if ( false === strpos( $server, ':' ) ) {
+						$node = $server;
 						$port = ini_get( 'memcache.default_port' );
+					} else {
+						list ( $node, $port ) = explode( ':', $server, 2 );
 					}
 
 					$port = intval( $port );
@@ -774,6 +874,12 @@ class WP_Object_Cache {
 
 				$this->mc[ $bucket ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
 				$this->mc[ $bucket ]->setCompressThreshold( 20000, 0.2 );
+
+				// Prepare individual connections to servers in default bucket for flush_number redundancy
+				if ( 'default' === $bucket ) {
+					$this->default_mcs[ $i ] = new Memcache();
+					$this->default_mcs[ $i ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
+				}
 			}
 		}
 
@@ -813,6 +919,7 @@ class WP_Object_Cache {
 
 		$keys = $this->strip_memcached_keys( $keys );
 
+		// @codeCoverageIgnoreStart
 		if ( $time > $this->slow_op_microseconds && 'get_multi' !== $op ) {
 			$this->increment_stat( 'slow-ops' );
 			$backtrace = null;
@@ -821,15 +928,16 @@ class WP_Object_Cache {
 			}
 			$this->group_ops['slow-ops'][] = array( $op, $keys, $size, $time, $comment, $group, $backtrace );
 		}
+		// @codeCoverageIgnoreEnd
 
 		$this->group_ops[ $group ][] = array( $op, $keys, $size, $time, $comment );
 	}
 
 	/**
-	 * Key format: key_salt:flush_timer:table_prefix:key_name
+	 * Key format: key_salt:flush_number:table_prefix:key_name
 	 *
-	 * We want to strip the `key_salt:flush_timer` part to not leak the memcached keys.
-	 * If `key_salt` is set we strip `'key_salt:flush_timer`, otherwise just strip the `flush_timer` part.
+	 * We want to strip the `key_salt:flush_number` part to not leak the memcached keys.
+	 * If `key_salt` is set we strip `'key_salt:flush_number`, otherwise just strip the `flush_number` part.
 	 */
 	function strip_memcached_keys( $keys ) {
 		if ( ! is_array( $keys ) ) {

@@ -1,0 +1,106 @@
+name: Build and Test
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: "Run Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wordpress }}, multisite: ${{ matrix.multisite }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - "7.4"
+          - "8.0"
+        wordpress:
+          - "5.5.x"
+          - "5.6.x"
+          - "5.7.x"
+          - "5.8.x"
+          - "5.9.x"
+          - "latest"
+          - "nightly"
+        multisite:
+          - "yes"
+          - "no"
+        exclude:
+          - php: "8.0"
+            wordpress: "5.5.x"
+          - php: "8.0"
+            wordpress: "5.6.x"
+          - php: "8.0"
+            wordpress: "5.7.x"
+          - php: "8.0"
+            wordpress: "5.8.x"
+    services:
+      mysql:
+        image: mariadb:10.3
+        ports:
+          - "3306:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: wordpress
+          MARIADB_INITDB_SKIP_TZINFO: 1
+          MYSQL_USER: wordpress
+          MYSQL_PASSWORD: wordpress
+          MYSQL_DATABASE: wordpress_test
+      memcached_1:
+        image: memcached:alpine
+        ports:
+          - "11211:11211"
+      memcached_2:
+        image: memcached:alpine
+        ports:
+          - "11212:11211"
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3.0.2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@2.19.1
+        with:
+          coverage: xdebug
+          php-version: ${{ matrix.php }}
+
+      - name: Install PHP Dependencies
+        uses: ramsey/composer-install@2.1.0
+
+      - name: Install WP Test Suite
+        run: ./.github/install-wp-tests.sh
+        env:
+          WP_VERSION: ${{ matrix.wordpress }}
+          DB_NAME: wordpress_test
+          DB_USER: wordpress
+          DB_PASSWORD: wordpress
+          DH_HOST: 127.0.0.1
+
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.multisite }}" == "yes" ]; then
+            export WP_MULTISITE=1
+          fi
+          if echo "${{ matrix.wordpress }}" | grep -qE '^5\.[5-8]'; then
+            wget -q -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-7.phar
+          else
+            wget -q -O /usr/local/bin/phpunit https://phar.phpunit.de/phpunit-9.phar
+          fi
+          chmod +x /usr/local/bin/phpunit
+          phpunit
+        env:
+          MEMCACHED_HOST_1: 127.0.0.1:11211
+          MEMCACHED_HOST_2: 127.0.0.1:11212
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage/clover.xml
+          flags: unittests
+        if: ${{ matrix.wordpress == 'latest' }}
