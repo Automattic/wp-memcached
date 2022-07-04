@@ -93,6 +93,21 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertEquals( $expected_cache , $this->object_cache->cache[ $key ] );
 	}
 
+	public function test_add_for_np_groups_does_not_overwrite(): void {
+		$group    = 'do-not-persist-me';
+		$expected = 123;
+
+		$this->object_cache->add_non_persistent_groups( [ $group ] );
+		$added = $this->object_cache->add( 'foo', $expected, $group );
+		self::assertTrue( $added );
+
+		$added = $this->object_cache->add( 'foo', $expected * 2, $group );
+		self::assertFalse( $added );
+
+		$actual = $this->object_cache->get( 'foo', $group );
+		self::assertEquals( $expected, $actual );
+	}
+
 	public function test_add_local_cache_is_unset_on_memcache_failure(): void {
 		$this->markTestSkipped( 'Unable to test without refactoring to inject a Memcache instance.' );
 	}
