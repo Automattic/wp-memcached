@@ -505,7 +505,7 @@ class WP_Object_Cache {
 				 * In PHP 8, they changed the way memcache_get() handles `null`:
 				 * https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache.c#L2175-L2177
 				 *
-				 * If the return value is `null`, it is silently converted to `false`. We can only rely upon $flags to find out whther `false` is real.
+				 * If the return value is `null`, it is silently converted to `false`. We can only rely upon $flags to find out whether `false` is real.
 				 */
 				$value = null;
 			}
