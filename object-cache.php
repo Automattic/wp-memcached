@@ -155,13 +155,19 @@ class WP_Object_Cache {
 		}
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
-			$this->cache[ $key ] = [
-				'value' => $data,
-				'found' => false,
-			];
+			if ( ! isset( $this->cache[ $key ] ) ) {
+				$this->cache[ $key ] = [
+					'value' => $data,
+					'found' => false,
+				];
 
-			return true;
-		} elseif ( isset( $this->cache[ $key ][ 'value' ] ) && false !== $this->cache[ $key ][ 'value' ] ) {
+				return true;
+			}
+
+			return false;
+		}
+
+		if ( isset( $this->cache[ $key ][ 'value' ] ) && false !== $this->cache[ $key ][ 'value' ] ) {
 			return false;
 		}
 
