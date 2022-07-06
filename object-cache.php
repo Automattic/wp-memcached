@@ -597,17 +597,16 @@ class WP_Object_Cache {
 		return $return;
 	}
 
-	public function get_multiple( $ids, $group = 'default', $force = false ) {
+	public function get_multiple( $keys, $group = 'default', $force = false ) {
 		$mc = $this->get_mc( $group );
 
 		$no_mc = in_array( $group, $this->no_mc_groups, true );
 
 		$uncached_keys = array();
+		$return        = array();
+		$return_cache  = array();
 
-		$return = array();
-		$return_cache = array();
-
-		foreach ( $ids as $id ) {
+		foreach ( $keys as $id ) {
 			$key = $this->key( $id, $group );
 
 			if ( isset( $this->cache[ $key ] ) && ( ! $force || $no_mc ) ) {
