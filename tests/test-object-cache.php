@@ -1098,4 +1098,79 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->assertSame( $expected, $found );
 	}
+
+	public function test_wp_cache_get_multiple() {
+		wp_cache_set( 'foo1', 'bar', 'group1' );
+		wp_cache_set( 'foo2', 'bar', 'group1' );
+		wp_cache_set( 'foo1', 'bar', 'group2' );
+
+		$found = wp_cache_get_multiple( array( 'foo1', 'foo2', 'foo3' ), 'group1' );
+
+		$expected = array(
+			'foo1' => 'bar',
+			'foo2' => 'bar',
+			'foo3' => false,
+		);
+
+		$this->assertSame( $expected, $found );
+	}
+
+	public function test_wp_cache_get_multiple_np() {
+		$group = 'do-not-persist-me';
+
+		$added = $this->object_cache->set( 'foo', 'data 1', $group );
+		$this->assertTrue( $added );
+
+		$this->object_cache->add_non_persistent_groups( [ $group ] );
+
+		$this->object_cache->cache = [];
+
+		$expected = [
+			'foo' => false,
+		];
+
+		$actual = wp_cache_get_multiple( [ 'foo' ], $group );
+		$this->assertSame( $expected, $actual );
+	}
+
+	public function test_wp_cache_get_multiple_consistency() {
+		$values = [
+			'empty-string' => '',
+			'empty-array'  => [],
+			'zero'         => 0,
+			'false'        => false,
+			'null'         => null,
+		];
+
+		foreach ( $values as $key => $value ) {
+			$result = wp_cache_set( $key, $value, 'group' );
+			self::assertTrue( $result );
+		}
+
+		$actual = wp_cache_get_multiple( array_keys( $values ), 'group', true );
+		self::assertSame( $values, $actual );
+	}
+
+	/**
+	 * @dataProvider data_wp_cache_get_consistency
+	 */
+	public function test_wp_cache_get_consistency( $value ) {
+		$result = wp_cache_set( 'key', $value, 'group' );
+		self::assertTrue( $result );
+
+		$found  = false;
+		$actual = wp_cache_get( 'key', 'group', true, $found );
+		self::assertTrue( $found );
+		self::assertSame( $value, $actual );
+	}
+
+	public function data_wp_cache_get_consistency() {
+		return [
+			'empty string' => [ '' ],
+			'empty array'  => [ [] ],
+			'zero'         => [ 0 ],
+			'false'        => [ false ],
+			'null'         => [ null ],
+		];
+	}
 }
