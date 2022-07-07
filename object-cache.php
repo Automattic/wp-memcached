@@ -76,6 +76,12 @@ function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	return $wp_object_cache->get( $key, $group, $force, $found );
 }
 
+function wp_cache_get_multiple( $keys, $group = '', $force = false ) {
+	global $wp_object_cache;
+
+	return $wp_object_cache->get_multiple( $keys, $group, $force );
+}
+
 /**
  * Retrieve multiple cache entries
  *
@@ -483,6 +489,25 @@ class WP_Object_Cache {
 			if ( false === $flags ) {
 				$found = false;
 				$value = false;
+			} elseif ( false === $value && ( $flags & 0xFF01 ) === 0x01 ) {
+				/*
+				 * The lowest byte is used for flags.
+				 * 0x01 means the value is serialized (MMC_SERIALIZED).
+				 * The second lowest indicates data type: 0 is string, 1 is bool, 3 is long, 7 is double.
+				 * `null` is serialized into a string, thus $flags is 0x0001
+				 * Empty string will correspond to $flags = 0x0000 (not serialized).
+				 * For `false` or `true` $flags will be 0x0100
+				 *
+				 * See:
+				 * - https://github.com/websupport-sk/pecl-memcache/blob/2a5de3c5d9c0bd0acbcf7e6e0b7570f15f89f55b/php7/memcache_pool.h#L61-L76 - PHP 7.x
+				 * - https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache_pool.h#L57-L76 - PHP 8.x
+				 *
+				 * In PHP 8, they changed the way memcache_get() handles `null`:
+				 * https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache.c#L2175-L2177
+				 *
+				 * If the return value is `null`, it is silently converted to `false`. We can only rely upon $flags to find out whether `false` is real.
+				 */
+				$value = null;
 			}
 
 			$this->cache[ $key ] = [
@@ -565,6 +590,57 @@ class WP_Object_Cache {
 
 			$elapsed = $this->timer_stop();
 			$this->group_ops_stats( 'get_multi', $keys, $group, null, $elapsed );
+		}
+
+		$this->cache = array_merge( $this->cache, $return_cache );
+
+		return $return;
+	}
+
+	public function get_multiple( $keys, $group = 'default', $force = false ) {
+		$mc = $this->get_mc( $group );
+
+		$no_mc = in_array( $group, $this->no_mc_groups, true );
+
+		$uncached_keys = array();
+		$return        = array();
+		$return_cache  = array();
+
+		foreach ( $keys as $id ) {
+			$key = $this->key( $id, $group );
+
+			if ( isset( $this->cache[ $key ] ) && ( ! $force || $no_mc ) ) {
+				$value         = $this->cache[ $key ]['found'] ? $this->cache[ $key ]['value'] : false;
+				$return[ $id ] = is_object( $value ) ? clone $value : $value;
+			} else if ( $no_mc ) {
+				$return[ $id ]        = false;
+				$return_cache[ $key ] = [
+					'value' => false,
+					'found' => false,
+				];
+			} else {
+				$uncached_keys[ $id ] = $key;
+			}
+		}
+
+		if ( $uncached_keys ) {
+			$this->timer_start();
+			$uncached_keys_list = array_values( $uncached_keys );
+			$values             = $mc->get( $uncached_keys_list );
+			$elapsed            = $this->timer_stop();
+
+			$this->group_ops_stats( 'get_multiple', $uncached_keys_list, $group, null, $elapsed );
+
+			foreach ( $uncached_keys as $id => $key ) {
+				$found = array_key_exists( $key, $values );
+				$value = $found ? $values[ $key ] : false;
+
+				$return[ $id ]        = $value;
+				$return_cache[ $key ] = [
+					'value' => $value,
+					'found' => $found,
+				];
+			}
 		}
 
 		$this->cache = array_merge( $this->cache, $return_cache );
@@ -694,6 +770,7 @@ class WP_Object_Cache {
 			'get' => 'green',
 			'get_local' => 'lightgreen',
 			'get_multi' => 'fuchsia',
+			'get_multiple' => 'navy',
 			'set' => 'purple',
 			'set_local' => 'orchid',
 			'add' => 'blue',
