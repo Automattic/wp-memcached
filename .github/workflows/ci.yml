@@ -41,6 +41,10 @@ jobs:
           - { wp: latest,   ms: 'yes', php: '8.1', phpunit: '9' }
           - { wp: nightly,  ms: 'no',  php: '8.1', phpunit: '9' }
           - { wp: nightly,  ms: 'yes', php: '8.1', phpunit: '9' }
+          - { wp: latest,   ms: 'no',  php: '8.2', phpunit: '9' }
+          - { wp: latest,   ms: 'yes', php: '8.2', phpunit: '9' }
+          - { wp: nightly,  ms: 'no',  php: '8.2', phpunit: '9' }
+          - { wp: nightly,  ms: 'yes', php: '8.2', phpunit: '9' }
     services:
       mysql:
         image: ghcr.io/automattic/vip-container-images/mariadb-lite:10.3
