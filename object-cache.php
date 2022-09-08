@@ -430,6 +430,8 @@ class WP_Object_Cache {
 		if ( is_main_site() ) {
 			$this->rotate_global_keys( $flush_number );
 		}
+
+		return true;
 	}
 
 	function rotate_site_keys( $flush_number = null ) {

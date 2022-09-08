@@ -428,6 +428,14 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertEquals( 1, $repairs );
 	}
 
+	/**
+	 * @ticket GH-111
+	 */
+	public function test_flush_returns_bool(): void {
+		$result = $this->object_cache->flush();
+		self::assertIsBool( $result );
+	}
+
 	// Tests for get.
 
 	public function test_get_returns_data(): void {
