@@ -72,9 +72,9 @@ jobs:
         id: coverage
         run: |
           if [ "${{ matrix.config.coverage }}" = "yes" ]; then
-            echo "::set-output name=coverage::xdebug"
+            echo "coverage=xdebug" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=coverage::none"
+            echo "coverage=none" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up PHP
