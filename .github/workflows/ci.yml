@@ -66,19 +66,19 @@ jobs:
           - "11212:11211"
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v3.1.0
 
       - name: Set up coverage reporting parameters
         id: coverage
         run: |
           if [ "${{ matrix.config.coverage }}" = "yes" ]; then
-            echo "::set-output name=coverage::xdebug"
+            echo "coverage=xdebug" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=coverage::none"
+            echo "coverage=none" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@2.21.1
+        uses: shivammathur/setup-php@2.21.2
         with:
           coverage: ${{ steps.coverage.outputs.coverage }}
           php-version: ${{ matrix.config.php }}
@@ -94,7 +94,7 @@ jobs:
         uses: ramsey/composer-install@2.1.0
 
       - name: Set up WordPress and WordPress Test Library
-        uses: sjinks/setup-wordpress-test-library@1.1.5
+        uses: sjinks/setup-wordpress-test-library@1.1.10
         with:
           version: ${{ matrix.config.wp }}
 
