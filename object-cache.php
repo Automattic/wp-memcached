@@ -825,6 +825,21 @@ class WP_Object_Cache {
 		";
 	}
 
+	/**
+	 * Returns the collected raw stats into JSON format.
+	 */
+	function get_stats() {
+		$stats = [];
+		$stats['totals'] = [
+			'query_time' => $this->time_total,
+			'memcache_size' => $this->size_total,
+		];
+		$stats['stats'] = $this->stats;
+		$stats['group_ops'] = $this->group_ops;
+
+		return wp_json_encode( $stats );
+	}
+
 	function stats() {
 		$this->js_toggle();
 
