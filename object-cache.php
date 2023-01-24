@@ -832,10 +832,26 @@ class WP_Object_Cache {
 		$stats = [];
 		$stats['totals'] = [
 			'query_time' => $this->time_total,
-			'memcache_size' => $this->size_total,
+			'size' => $this->size_total,
 		];
 		$stats['stats'] = $this->stats;
-		$stats['group_ops'] = $this->group_ops;
+		$stats['operations'] = [];
+		foreach ( $this->group_ops as $cache_group => $dataset ) {
+			if ( empty( $cache_group ) ) {
+				$cache_group = 'default';
+			}
+
+			foreach ( $dataset as $data ) {
+				$operation = $data[0];
+				$op = [
+					'key' => $data[1],
+					'size' => $data[2],
+					'time' => $data[3],
+					'group' => $data[4],
+				];
+				$stats['operations'][ $operation ][] = $op;
+			}
+		}
 
 		return wp_json_encode( $stats );
 	}
