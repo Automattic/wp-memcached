@@ -853,7 +853,7 @@ class WP_Object_Cache {
 			}
 		}
 
-		return wp_json_encode( $stats );
+		return $stats;
 	}
 
 	function stats() {
