@@ -836,9 +836,14 @@ class WP_Object_Cache {
 		];
 		$stats['stats'] = $this->stats;
 		$stats['operations'] = [];
+		$stats['groups'] = [];
 		foreach ( $this->group_ops as $cache_group => $dataset ) {
 			if ( empty( $cache_group ) ) {
 				$cache_group = 'default';
+			}
+
+			if ( ! isset( $stats['groups'][ $cache_group ] ) ) {
+				$stats['groups'][ $cache_group ] = true;
 			}
 
 			foreach ( $dataset as $data ) {
@@ -847,7 +852,8 @@ class WP_Object_Cache {
 					'key' => $data[1],
 					'size' => $data[2],
 					'time' => $data[3],
-					'group' => $data[4],
+					'group' => $cache_group,
+					'result' => $data[4],
 				];
 				$stats['operations'][ $operation ][] = $op;
 			}
@@ -855,6 +861,7 @@ class WP_Object_Cache {
 
 		return $stats;
 	}
+
 
 	function stats() {
 		$this->js_toggle();
