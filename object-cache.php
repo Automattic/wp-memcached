@@ -826,7 +826,9 @@ class WP_Object_Cache {
 	}
 
 	/**
-	 * Returns the collected raw stats into JSON format.
+	 * Returns the collected raw stats.
+	 *
+	 * @return array $stats
 	 */
 	function get_stats() {
 		$stats = [];
