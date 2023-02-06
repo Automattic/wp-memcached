@@ -844,8 +844,8 @@ class WP_Object_Cache {
 				$cache_group = 'default';
 			}
 
-			if ( ! isset( $stats['groups'][ $cache_group ] ) ) {
-				$stats['groups'][ $cache_group ] = true;
+			if ( ! in_array ( $cache_group, $stats['groups'] ) ) {
+				$stats['groups'][] = $cache_group;
 			}
 
 			foreach ( $dataset as $data ) {
