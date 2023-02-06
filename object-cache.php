@@ -655,7 +655,11 @@ class WP_Object_Cache {
 		if ( $uncached_keys ) {
 			$this->timer_start();
 			$uncached_keys_list = array_values( $uncached_keys );
-			$values             = $mc->get( $uncached_keys_list );
+			if ($this->using_memcached){
+				$values             = $mc->getMulti( $uncached_keys_list );
+			} else {
+				$values             = $mc->get( $uncached_keys_list );
+			}
 			$elapsed            = $this->timer_stop();
 
 			$this->group_ops_stats( 'get_multiple', $uncached_keys_list, $group, null, $elapsed );
