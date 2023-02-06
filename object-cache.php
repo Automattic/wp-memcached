@@ -171,6 +171,8 @@ class WP_Object_Cache {
 	var $size_total = 0;
 	var $slow_op_microseconds = 0.005; // 5 ms
 
+	private $using_memcached = false;
+
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
@@ -204,7 +206,11 @@ class WP_Object_Cache {
 
 		$size = $this->get_data_size( $data );
 		$this->timer_start();
-		$result = $mc->add( $key, $data, false, $expire );
+		if ($this->using_memcached) {
+			$result = $mc->add( $key, $data, $expire);
+		} else {
+			$result = $mc->add( $key, $data, false, $expire );
+		}
 		$elapsed = $this->timer_stop();
 
 		$comment = '';
@@ -291,7 +297,11 @@ class WP_Object_Cache {
 
 	function close() {
 		foreach ( $this->mc as $bucket => $mc ) {
-			$mc->close();
+			if ($this->using_memcached) {
+				$mc->quit();
+			} else {
+				$mc->close();
+			}
 		}
 	}
 
@@ -336,9 +346,12 @@ class WP_Object_Cache {
 		$values = array();
 		$size = 19; // size of microsecond timestamp serialized
 		foreach ( $this->default_mcs as $i => $mc ) {
-			$flags = false;
 			$this->timer_start();
-			$values[ $i ] = $mc->get( $key, $flags );
+			if ($this->using_memcached) {
+				$values[ $i ] = $mc->get( $key );
+			} else {
+				$values[ $i ] = $mc->get( $key, false );
+			}
 			$elapsed = $this->timer_stop();
 
 			if ( empty( $values[ $i ] ) ) {
@@ -359,7 +372,11 @@ class WP_Object_Cache {
 		foreach ( $this->default_mcs as $i => $mc ) {
 			if ( $values[ $i ] < $max ) {
 				$this->timer_start();
-				$mc->set( $key, $max, false, $expire );
+				if ($this->using_memcached) {
+					$mc->set( $key, $max, $expire );
+				} else {
+					$mc->set( $key, $max, false, $expire );
+				}
 				$elapsed = $this->timer_stop();
 				$this->group_ops_stats( 'set_flush_number', $key, $group, $size, $elapsed, 'replication_repair' );
 			}
@@ -374,7 +391,11 @@ class WP_Object_Cache {
 		$size = 19;
 		foreach ( $this->default_mcs as $i => $mc ) {
 			$this->timer_start();
-			$mc->set( $key, $value, false, $expire );
+			if ($this->using_memcached) {
+				$mc->set( $key, $value, $expire );
+			} else {
+				$mc->set( $key, $value, false, $expire );
+			}
 			$elapsed = $this->timer_stop();
 			$this->group_ops_stats( 'set_flush_number', $key, $group, $size, $elapsed, 'replication' );
 		}
@@ -462,7 +483,9 @@ class WP_Object_Cache {
 		$key = $this->key( $id, $group );
 		$mc = $this->get_mc( $group );
 		$found = true;
-
+        if ($group == 'transient' && !$force && defined('\WP_FORCE_UPDATE_TRANSIENT') && \WP_FORCE_UPDATE_TRANSIENT) {
+            $force = true;
+        }
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
 			if ( isset( $this->cache[ $key ][ 'value' ] ) && is_object( $this->cache[ $key ][ 'value' ] ) ) {
 				$value = clone $this->cache[ $key ][ 'value' ];
@@ -484,14 +507,18 @@ class WP_Object_Cache {
 		} else {
 			$flags = false;
 			$this->timer_start();
-			$value = $mc->get( $key, $flags );
+			if ($this->using_memcached) {
+				$value = $mc->get( $key );
+			} else {
+				$value = $mc->get( $key, $flags );
+			}
 			$elapsed = $this->timer_stop();
 
 			// Value will be unchanged if the key doesn't exist.
 			if ( false === $flags ) {
 				$found = false;
 				$value = false;
-			} elseif ( false === $value && ( $flags & 0xFF01 ) === 0x01 ) {
+			} elseif (!$this->using_memcached && false === $value && ( $flags & 0xFF01 ) === 0x01 ) {
 				/*
 				 * The lowest byte is used for flags.
 				 * 0x01 means the value is serialized (MMC_SERIALIZED).
@@ -739,7 +766,11 @@ class WP_Object_Cache {
 
 		$size = $this->get_data_size( $data );
 		$this->timer_start();
-		$result = $mc->set( $key, $data, false, $expire );
+		if ($this->using_memcached) {
+			$result = $mc->set( $key, $data, $expire );
+		} else {
+			$result = $mc->set( $key, $data, false, $expire );
+		}
 		$elapsed = $this->timer_stop();
 		$this->group_ops_stats( 'set', $key, $group, $size, $elapsed );
 
@@ -971,6 +1002,11 @@ class WP_Object_Cache {
 
 		global $memcached_servers;
 
+		// Use Memcached extension.
+		if (defined('\WP_MEMCACHED_EXT') && \WP_MEMCACHED_EXT === 'memcached' && class_exists("\Memcached")) {
+            $this->using_memcached = true;
+        }
+
 		if ( isset( $memcached_servers ) ) {
 			$buckets = $memcached_servers;
 		} else {
@@ -984,7 +1020,17 @@ class WP_Object_Cache {
 		}
 
 		foreach ( $buckets as $bucket => $servers ) {
-			$this->mc[ $bucket ] = new Memcache();
+			if ($this->using_memcached) {
+				$this->mc[ $bucket ] = new \Memcached();
+				//These settings are explained at http://php.net/manual/en/memcached.addservers.php#118940
+				$this->mc[ $bucket ]->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 100);
+				$this->mc[ $bucket ]->setOption(\Memcached::OPT_REMOVE_FAILED_SERVERS, true);
+				$this->mc[ $bucket ]->setOption(\Memcached::OPT_RETRY_TIMEOUT, 1);
+				$this->mc[ $bucket ]->setOption(\Memcached::OPT_SERVER_FAILURE_LIMIT, 2);
+				$this->mc[ $bucket ]->setOption(\Memcached::OPT_DISTRIBUTION, \Memcached::DISTRIBUTION_CONSISTENT);
+			} else {
+				$this->mc[ $bucket ] = new Memcache();
+			}
 
 			foreach ( $servers as $i => $server  ) {
 				if ( 'unix://' == substr( $server, 0, 7 ) ) {
@@ -1005,13 +1051,29 @@ class WP_Object_Cache {
 					}
 				}
 
-				$this->mc[ $bucket ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
-				$this->mc[ $bucket ]->setCompressThreshold( 20000, 0.2 );
+				if ($this->using_memcached) {
+					$this->mc[ $bucket ]->addServer( $node, $port, true );
+				} else {
+					$this->mc[ $bucket ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
+					$this->mc[ $bucket ]->setCompressThreshold( 20000, 0.2 );
+				}
 
 				// Prepare individual connections to servers in default bucket for flush_number redundancy
 				if ( 'default' === $bucket ) {
-					$this->default_mcs[ $i ] = new Memcache();
-					$this->default_mcs[ $i ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
+					if ($this->using_memcached) {
+						$this->default_mcs[ $i ] = new \Memcached();
+						//These settings are explained at http://php.net/manual/en/memcached.addservers.php#118940
+						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 100);
+						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_REMOVE_FAILED_SERVERS, true);
+						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_RETRY_TIMEOUT, 1);
+						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_SERVER_FAILURE_LIMIT, 2);
+						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_DISTRIBUTION, \Memcached::DISTRIBUTION_CONSISTENT);
+			
+						$this->default_mcs[ $i ]->addServer( $node, $port, true );
+					} else {
+						$this->default_mcs[ $i ] = new Memcache();
+						$this->default_mcs[ $i ]->addServer( $node, $port, true, 1, 1, 15, true, array( $this, 'failure_callback' ) );
+					}
 				}
 			}
 		}
