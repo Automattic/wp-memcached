@@ -839,13 +839,11 @@ class WP_Object_Cache {
 		$stats['stats'] = $this->stats;
 		$stats['operations'] = [];
 		$stats['groups'] = [];
+		$stats['slow-ops'] = [];
+		$stats['slow-ops-groups'] = [];
 		foreach ( $this->group_ops as $cache_group => $dataset ) {
 			if ( empty( $cache_group ) ) {
 				$cache_group = 'default';
-			}
-
-			if ( ! in_array ( $cache_group, $stats['groups'] ) ) {
-				$stats['groups'][] = $cache_group;
 			}
 
 			foreach ( $dataset as $data ) {
@@ -857,7 +855,22 @@ class WP_Object_Cache {
 					'group' => $cache_group,
 					'result' => $data[4],
 				];
-				$stats['operations'][ $operation ][] = $op;
+
+				if ( $cache_group === 'slow-ops' ) {
+					$key             = 'slow-ops';
+					$groups_key      = 'slow-ops-groups';
+					$op['group']     = $data[5];
+					$op['backtrace'] = $data[6];
+				} else {
+					$key        = 'operations';
+					$groups_key = 'groups';
+				}
+
+				$stats[ $key ][ $operation ][] = $op;
+
+				if ( ! in_array( $op['group'], $stats[ $groups_key ] ) ) {
+					$stats[ $groups_key ][] = $op['group'];
+				}
 			}
 		}
 
