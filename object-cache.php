@@ -836,7 +836,7 @@ class WP_Object_Cache {
 			'query_time' => $this->time_total,
 			'size' => $this->size_total,
 		];
-		$stats['stats'] = $this->stats;
+		$stats['operation_counts'] = $this->stats;
 		$stats['operations'] = [];
 		$stats['groups'] = [];
 		$stats['slow-ops'] = [];
