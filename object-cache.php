@@ -513,30 +513,37 @@ class WP_Object_Cache {
 				$value = $mc->get( $key, $flags );
 			}
 			$elapsed = $this->timer_stop();
-
-			// Value will be unchanged if the key doesn't exist.
-			if ( false === $flags ) {
-				$found = false;
-				$value = false;
-			} elseif (!$this->using_memcached && false === $value && ( $flags & 0xFF01 ) === 0x01 ) {
-				/*
-				 * The lowest byte is used for flags.
-				 * 0x01 means the value is serialized (MMC_SERIALIZED).
-				 * The second lowest indicates data type: 0 is string, 1 is bool, 3 is long, 7 is double.
-				 * `null` is serialized into a string, thus $flags is 0x0001
-				 * Empty string will correspond to $flags = 0x0000 (not serialized).
-				 * For `false` or `true` $flags will be 0x0100
-				 *
-				 * See:
-				 * - https://github.com/websupport-sk/pecl-memcache/blob/2a5de3c5d9c0bd0acbcf7e6e0b7570f15f89f55b/php7/memcache_pool.h#L61-L76 - PHP 7.x
-				 * - https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache_pool.h#L57-L76 - PHP 8.x
-				 *
-				 * In PHP 8, they changed the way memcache_get() handles `null`:
-				 * https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache.c#L2175-L2177
-				 *
-				 * If the return value is `null`, it is silently converted to `false`. We can only rely upon $flags to find out whether `false` is real.
-				 */
-				$value = null;
+			
+			if ($this->using_memcached) {
+				if (false === $value && $mc->getResultCode() == \Memcached::RES_NOTFOUND) {
+					$found = false;
+					$value = false;
+				}
+			} else {
+				// Value will be unchanged if the key doesn't exist.
+				if ( false === $flags ) {
+					$found = false;
+					$value = false;
+				} elseif (false === $value && (  $flags & 0xFF01 ) === 0x01 ) {
+					/*
+					* The lowest byte is used for flags.
+						* 0x01 means the value is serialized (MMC_SERIALIZED).
+						* The second lowest indicates data type: 0 is string, 1 is bool, 3 is long, 7 is double.
+						* `null` is serialized into a string, thus $flags is 0x0001
+						* Empty string will correspond to $flags = 0x0000 (not serialized).
+						* For `false` or `true` $flags will be 0x0100
+						*
+						* See:
+						* - https://github.com/websupport-sk/pecl-memcache/blob/2a5de3c5d9c0bd0acbcf7e6e0b7570f15f89f55b/php7/memcache_pool.h#L61-L76 - PHP 7.x
+						* - https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache_pool.h#L57-L76 - PHP 8.x
+						*
+						* In PHP 8, they changed the way memcache_get() handles `null`:
+						* https://github.com/websupport-sk/pecl-memcache/blob/ccf702b14b18fce18a1863e115a7b4c964df952e/src/memcache.c#L2175-L2177
+						*
+						* If the return value is `null`, it is silently converted to `false`. We can only rely upon $flags to find out whether `false` is real.
+						*/
+					$value = null;
+				}
 			}
 
 			$this->cache[ $key ] = [
