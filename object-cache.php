@@ -167,11 +167,20 @@ class WP_Object_Cache {
 
 	var $connection_errors = array();
 
+	var $time_start = 0;
 	var $time_total = 0;
 	var $size_total = 0;
 	var $slow_op_microseconds = 0.005; // 5 ms
 
-	private $using_memcached = false;
+	var $cache_hits = 0;
+	var $cache_misses = 0;
+
+	var $global_prefix = '';
+	var $blog_prefix  = '';
+
+	var $using_memcached = false;
+
+	private $key_salt = '';
 
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
@@ -483,7 +492,7 @@ class WP_Object_Cache {
 		$key = $this->key( $id, $group );
 		$mc = $this->get_mc( $group );
 		$found = true;
-        if ($group == 'transient' && !$force && defined('\WP_FORCE_UPDATE_TRANSIENT') && \WP_FORCE_UPDATE_TRANSIENT) {
+        if ($group == 'transient' && !$force && defined('WP_MEMCACHED_FORCE_TRANSIENT_UPDATE') && WP_MEMCACHED_FORCE_TRANSIENT_UPDATE) {
             $force = true;
         }
 		if ( isset( $this->cache[ $key ] ) && ( ! $force || in_array( $group, $this->no_mc_groups ) ) ) {
@@ -515,7 +524,7 @@ class WP_Object_Cache {
 			$elapsed = $this->timer_stop();
 			
 			if ($this->using_memcached) {
-				if (false === $value && $mc->getResultCode() == \Memcached::RES_NOTFOUND) {
+				if (false === $value && $mc->getResultCode() == Memcached::RES_NOTFOUND) {
 					$found = false;
 					$value = false;
 				}
@@ -993,8 +1002,6 @@ class WP_Object_Cache {
 	function salt_keys( $key_salt ) {
 		if ( strlen( $key_salt ) ) {
 			$this->key_salt = $key_salt . ':';
-		} else {
-			$this->key_salt = '';
 		}
 	}
 
@@ -1014,7 +1021,7 @@ class WP_Object_Cache {
 		global $memcached_servers;
 
 		// Use Memcached extension.
-		if (defined('\WP_MEMCACHED_EXT') && \WP_MEMCACHED_EXT === 'memcached' && class_exists("\Memcached")) {
+		if (defined('WP_MEMCACHED_EXT') && WP_MEMCACHED_EXT === 'memcached' && class_exists("Memcached")) {
             $this->using_memcached = true;
         }
 
@@ -1032,13 +1039,13 @@ class WP_Object_Cache {
 
 		foreach ( $buckets as $bucket => $servers ) {
 			if ($this->using_memcached) {
-				$this->mc[ $bucket ] = new \Memcached();
+				$this->mc[ $bucket ] = new Memcached();
 				//These settings are explained at http://php.net/manual/en/memcached.addservers.php#118940
-				$this->mc[ $bucket ]->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 100);
-				$this->mc[ $bucket ]->setOption(\Memcached::OPT_REMOVE_FAILED_SERVERS, true);
-				$this->mc[ $bucket ]->setOption(\Memcached::OPT_RETRY_TIMEOUT, 1);
-				$this->mc[ $bucket ]->setOption(\Memcached::OPT_SERVER_FAILURE_LIMIT, 2);
-				$this->mc[ $bucket ]->setOption(\Memcached::OPT_DISTRIBUTION, \Memcached::DISTRIBUTION_CONSISTENT);
+				$this->mc[ $bucket ]->setOption(Memcached::OPT_CONNECT_TIMEOUT, 100);
+				$this->mc[ $bucket ]->setOption(Memcached::OPT_REMOVE_FAILED_SERVERS, true);
+				$this->mc[ $bucket ]->setOption(Memcached::OPT_RETRY_TIMEOUT, 1);
+				$this->mc[ $bucket ]->setOption(Memcached::OPT_SERVER_FAILURE_LIMIT, 2);
+				$this->mc[ $bucket ]->setOption(Memcached::OPT_DISTRIBUTION, Memcached::DISTRIBUTION_CONSISTENT);
 			} else {
 				$this->mc[ $bucket ] = new Memcache();
 			}
@@ -1072,13 +1079,13 @@ class WP_Object_Cache {
 				// Prepare individual connections to servers in default bucket for flush_number redundancy
 				if ( 'default' === $bucket ) {
 					if ($this->using_memcached) {
-						$this->default_mcs[ $i ] = new \Memcached();
+						$this->default_mcs[ $i ] = new Memcached();
 						//These settings are explained at http://php.net/manual/en/memcached.addservers.php#118940
-						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_CONNECT_TIMEOUT, 100);
-						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_REMOVE_FAILED_SERVERS, true);
-						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_RETRY_TIMEOUT, 1);
-						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_SERVER_FAILURE_LIMIT, 2);
-						$this->default_mcs[ $i ]->setOption(\Memcached::OPT_DISTRIBUTION, \Memcached::DISTRIBUTION_CONSISTENT);
+						$this->default_mcs[ $i ]->setOption(Memcached::OPT_CONNECT_TIMEOUT, 100);
+						$this->default_mcs[ $i ]->setOption(Memcached::OPT_REMOVE_FAILED_SERVERS, true);
+						$this->default_mcs[ $i ]->setOption(Memcached::OPT_RETRY_TIMEOUT, 1);
+						$this->default_mcs[ $i ]->setOption(Memcached::OPT_SERVER_FAILURE_LIMIT, 2);
+						$this->default_mcs[ $i ]->setOption(Memcached::OPT_DISTRIBUTION, Memcached::DISTRIBUTION_CONSISTENT);
 			
 						$this->default_mcs[ $i ]->addServer( $node, $port, true );
 					} else {
@@ -1090,9 +1097,6 @@ class WP_Object_Cache {
 		}
 
 		global $blog_id, $table_prefix;
-
-		$this->global_prefix = '';
-		$this->blog_prefix  = '';
 
 		if ( function_exists( 'is_multisite' ) ) {
 			$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;

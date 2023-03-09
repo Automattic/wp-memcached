@@ -80,6 +80,9 @@ users
 userslugs
 widget
 `
+= How can I use Memcached PHP extension? =
+
+Add `define('WP_MEMCACHED_EXT', 'memcached');` to wp-config.php above `/* That's all, stop editing! Happy blogging. */`.
 
 == Changelog ==
 
