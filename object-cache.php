@@ -140,6 +140,24 @@ function wp_cache_add_non_persistent_groups( $groups ) {
 	$wp_object_cache->add_non_persistent_groups( $groups );
 }
 
+
+/**
+ * Determines whether the object cache implementation supports a particular feature.
+ *
+ * @param string $feature Name of the feature to check for. Possible values include:
+ *                        'add_multiple', 'set_multiple', 'get_multiple', 'delete_multiple',
+ *                        'flush_runtime', 'flush_group'.
+ * @return bool True if the feature is supported, false otherwise.
+ */
+function wp_cache_supports( $feature ) {
+	switch ( $feature ) {
+		case 'get_multiple':
+			return true;
+		default:
+			return false;
+	}
+}
+
 class WP_Object_Cache {
 	var $global_groups = array( 'WP_Object_Cache_global' );
 
