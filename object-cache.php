@@ -441,8 +441,8 @@ class WP_Object_Cache {
 	}
 
 	function flush_runtime() {
-		$this->cache      = array();
-		$this-> group_ops = array();
+		$this->cache     = array();
+		$this->group_ops = array();
 
 		return true;
 	}
