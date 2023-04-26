@@ -67,7 +67,7 @@ function wp_cache_flush() {
 function wp_cache_flush_runtime() {
 	global $wp_object_cache;
 
-	return $wp_object_cache->local_flush();
+	return $wp_object_cache->flush_runtime();
 }
 
 function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
@@ -440,8 +440,9 @@ class WP_Object_Cache {
 		return $this->flush_number[ $this->blog_prefix ];
 	}
 
-	function local_flush() {
-		$this->cache = array();
+	function flush_runtime() {
+		$this->cache      = array();
+		$this-> group_ops = array();
 
 		return true;
 	}
