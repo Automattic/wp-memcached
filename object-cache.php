@@ -64,6 +64,12 @@ function wp_cache_flush() {
 	return $wp_object_cache->flush();
 }
 
+function wp_cache_flush_runtime() {
+	global $wp_object_cache;
+
+	return $wp_object_cache->flush_runtime();
+}
+
 function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	global $wp_object_cache;
 
@@ -138,6 +144,26 @@ function wp_cache_add_non_persistent_groups( $groups ) {
 	global $wp_object_cache;
 
 	$wp_object_cache->add_non_persistent_groups( $groups );
+}
+
+
+/**
+ * Determines whether the object cache implementation supports a particular feature.
+ *
+ * @param string $feature Name of the feature to check for. Possible values include:
+ *                        'add_multiple', 'set_multiple', 'get_multiple', 'delete_multiple',
+ *                        'flush_runtime', 'flush_group'.
+ * @return bool True if the feature is supported, false otherwise.
+ */
+function wp_cache_supports( $feature ) {
+	switch ( $feature ) {
+		case 'get_multiple':
+		case 'flush_runtime':
+			return true;
+
+		default:
+			return false;
+	}
 }
 
 class WP_Object_Cache {
@@ -412,6 +438,13 @@ class WP_Object_Cache {
 			$this->flush_number[ $this->blog_prefix ] = $this->get_flush_number( $this->flush_group );
 		}
 		return $this->flush_number[ $this->blog_prefix ];
+	}
+
+	function flush_runtime() {
+		$this->cache     = array();
+		$this->group_ops = array();
+
+		return true;
 	}
 
 	function flush() {
