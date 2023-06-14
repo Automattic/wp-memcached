@@ -64,6 +64,12 @@ function wp_cache_flush() {
 	return $wp_object_cache->flush();
 }
 
+function wp_cache_flush_runtime() {
+	global $wp_object_cache;
+
+	return $wp_object_cache->flush_runtime();
+}
+
 function wp_cache_get( $key, $group = '', $force = false, &$found = null ) {
 	global $wp_object_cache;
 
@@ -138,6 +144,26 @@ function wp_cache_add_non_persistent_groups( $groups ) {
 	global $wp_object_cache;
 
 	$wp_object_cache->add_non_persistent_groups( $groups );
+}
+
+
+/**
+ * Determines whether the object cache implementation supports a particular feature.
+ *
+ * @param string $feature Name of the feature to check for. Possible values include:
+ *                        'add_multiple', 'set_multiple', 'get_multiple', 'delete_multiple',
+ *                        'flush_runtime', 'flush_group'.
+ * @return bool True if the feature is supported, false otherwise.
+ */
+function wp_cache_supports( $feature ) {
+	switch ( $feature ) {
+		case 'get_multiple':
+		case 'flush_runtime':
+			return true;
+
+		default:
+			return false;
+	}
 }
 
 class WP_Object_Cache {
@@ -442,6 +468,13 @@ class WP_Object_Cache {
 			$this->flush_number[ $this->blog_prefix ] = $this->get_flush_number( $this->flush_group );
 		}
 		return $this->flush_number[ $this->blog_prefix ];
+	}
+
+	function flush_runtime() {
+		$this->cache     = array();
+		$this->group_ops = array();
+
+		return true;
 	}
 
 	function flush() {
@@ -875,6 +908,59 @@ class WP_Object_Cache {
 		</script>
 		";
 	}
+
+	/**
+	 * Returns the collected raw stats.
+	 *
+	 * @return array $stats
+	 */
+	function get_stats() {
+		$stats = [];
+		$stats['totals'] = [
+			'query_time' => $this->time_total,
+			'size' => $this->size_total,
+		];
+		$stats['operation_counts'] = $this->stats;
+		$stats['operations'] = [];
+		$stats['groups'] = [];
+		$stats['slow-ops'] = [];
+		$stats['slow-ops-groups'] = [];
+		foreach ( $this->group_ops as $cache_group => $dataset ) {
+			if ( empty( $cache_group ) ) {
+				$cache_group = 'default';
+			}
+
+			foreach ( $dataset as $data ) {
+				$operation = $data[0];
+				$op = [
+					'key' => $data[1],
+					'size' => $data[2],
+					'time' => $data[3],
+					'group' => $cache_group,
+					'result' => $data[4],
+				];
+
+				if ( $cache_group === 'slow-ops' ) {
+					$key             = 'slow-ops';
+					$groups_key      = 'slow-ops-groups';
+					$op['group']     = $data[5];
+					$op['backtrace'] = $data[6];
+				} else {
+					$key        = 'operations';
+					$groups_key = 'groups';
+				}
+
+				$stats[ $key ][ $operation ][] = $op;
+
+				if ( ! in_array( $op['group'], $stats[ $groups_key ] ) ) {
+					$stats[ $groups_key ][] = $op['group'];
+				}
+			}
+		}
+
+		return $stats;
+	}
+
 
 	function stats() {
 		$this->js_toggle();
