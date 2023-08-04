@@ -187,7 +187,7 @@ class WP_Object_Cache {
 	);
 	var $group_ops     = array();
 	var $cache_hits    = 0;
-	var $cache_misses  = 0
+	var $cache_misses  = 0;
 	var $global_prefix = '';
 	var $blog_prefix   = '';
 	var $key_salt      = '';
