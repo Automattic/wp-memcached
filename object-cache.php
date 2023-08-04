@@ -146,7 +146,6 @@ function wp_cache_add_non_persistent_groups( $groups ) {
 	$wp_object_cache->add_non_persistent_groups( $groups );
 }
 
-
 /**
  * Determines whether the object cache implementation supports a particular feature.
  *
@@ -171,12 +170,27 @@ class WP_Object_Cache {
 
 	var $no_mc_groups = array();
 
-	var $cache       = array();
+	var $cache         = array();
 	/** @var Memcache[] */
-	var $mc          = array();
-	var $default_mcs = array();
-	var $stats       = array();
-	var $group_ops   = array();
+	var $mc            = array();
+	var $default_mcs   = array();
+	var $stats         = array(
+		'get'          => 0,
+		'get_local'    => 0,
+		'get_multi'    => 0,
+		'set'          => 0,
+		'set_local'    => 0,
+		'add'          => 0,
+		'delete'       => 0,
+		'delete_local' => 0,
+		'slow-ops'     => 0,
+	);
+	var $group_ops     = array();
+	var $cache_hits    = 0;
+	var $cache_misses  = 0
+	var $global_prefix = '';
+	var $blog_prefix   = '';
+	var $key_salt      = '';
 
 	var $flush_group         = 'WP_Object_Cache';
 	var $global_flush_group  = 'WP_Object_Cache_global';
@@ -193,6 +207,7 @@ class WP_Object_Cache {
 
 	var $connection_errors = array();
 
+	var $time_start = 0;
 	var $time_total = 0;
 	var $size_total = 0;
 	var $slow_op_microseconds = 0.005; // 5 ms
@@ -1043,18 +1058,6 @@ class WP_Object_Cache {
 	}
 
 	function __construct() {
-		$this->stats = array(
-			'get' => 0,
-			'get_local' => 0,
-			'get_multi' => 0,
-			'set' => 0,
-			'set_local' => 0,
-			'add' => 0,
-			'delete' => 0,
-			'delete_local' => 0,
-			'slow-ops' => 0,
-		);
-
 		global $memcached_servers;
 
 		if ( isset( $memcached_servers ) ) {
@@ -1105,7 +1108,7 @@ class WP_Object_Cache {
 		global $blog_id, $table_prefix;
 
 		$this->global_prefix = '';
-		$this->blog_prefix  = '';
+		$this->blog_prefix   = '';
 
 		if ( function_exists( 'is_multisite' ) ) {
 			$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
