@@ -1036,9 +1036,9 @@ class WP_Object_Cache {
 
 	function salt_keys( $key_salt ) {
 		if ( strlen( $key_salt ) ) {
-			$this->key_salt = $key_salt . ':';
+			$this->__set( 'key_salt', $key_salt . ':' );
 		} else {
-			$this->key_salt = '';
+			$this->__set( 'key_salt', '' );
 		}
 	}
 
@@ -1104,8 +1104,8 @@ class WP_Object_Cache {
 
 		global $blog_id, $table_prefix;
 
-		$this->global_prefix = '';
-		$this->blog_prefix  = '';
+		$this->__set( 'global_prefix', '' );
+		$this->__set( 'blog_prefix',  '' );
 
 		if ( function_exists( 'is_multisite' ) ) {
 			$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
@@ -1114,8 +1114,8 @@ class WP_Object_Cache {
 
 		$this->salt_keys( WP_CACHE_KEY_SALT );
 
-		$this->cache_hits   =& $this->stats['get'];
-		$this->cache_misses =& $this->stats['add'];
+		$this->__set( 'cache_hits', $this->stats['get'] );
+		$this->__set( 'cache_misses', $this->stats['add'] );
 	}
 
 	function increment_stat( $field, $num = 1 ) {
@@ -1181,7 +1181,7 @@ class WP_Object_Cache {
 	}
 
 	function timer_start() {
-		$this->time_start = microtime( true );
+		$this->__set( 'time_start', microtime( true ) );
 
 		return true;
 	}
