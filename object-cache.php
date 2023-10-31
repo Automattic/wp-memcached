@@ -197,6 +197,13 @@ class WP_Object_Cache {
 	var $size_total = 0;
 	var $slow_op_microseconds = 0.005; // 5 ms
 
+	var $global_prefix = '';
+	var $blog_prefix   = '';
+	var $key_salt      = '';
+	var $cache_hits    = 0;
+	var $cache_misses  = 0;
+	var $time_start    = 0;
+
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
@@ -1036,9 +1043,9 @@ class WP_Object_Cache {
 
 	function salt_keys( $key_salt ) {
 		if ( strlen( $key_salt ) ) {
-			$this->__set( 'key_salt', $key_salt . ':' );
+			$this->key_salt = $key_salt . ':';
 		} else {
-			$this->__set( 'key_salt', '' );
+			$this->key_salt = '';
 		}
 	}
 
@@ -1104,8 +1111,8 @@ class WP_Object_Cache {
 
 		global $blog_id, $table_prefix;
 
-		$this->__set( 'global_prefix', '' );
-		$this->__set( 'blog_prefix',  '' );
+		$this->global_prefix = '';
+		$this->blog_prefix =  '';
 
 		if ( function_exists( 'is_multisite' ) ) {
 			$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
@@ -1114,8 +1121,8 @@ class WP_Object_Cache {
 
 		$this->salt_keys( WP_CACHE_KEY_SALT );
 
-		$this->__set( 'cache_hits', $this->stats['get'] );
-		$this->__set( 'cache_misses', $this->stats['add'] );
+		$this->cache_hits = $this->stats['get'];
+		$this->cache_misses = $this->stats['add'];
 	}
 
 	function increment_stat( $field, $num = 1 ) {
@@ -1181,7 +1188,7 @@ class WP_Object_Cache {
 	}
 
 	function timer_start() {
-		$this->__set( 'time_start', microtime( true ) );
+		$this->time_start = microtime( true );
 
 		return true;
 	}
