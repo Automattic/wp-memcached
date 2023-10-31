@@ -1121,8 +1121,8 @@ class WP_Object_Cache {
 
 		$this->salt_keys( WP_CACHE_KEY_SALT );
 
-		$this->cache_hits = $this->stats['get'];
-		$this->cache_misses = $this->stats['add'];
+		$this->cache_hits   =& $this->stats['get'];
+		$this->cache_misses =& $this->stats['add'];
 	}
 
 	function increment_stat( $field, $num = 1 ) {
