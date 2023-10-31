@@ -1112,7 +1112,7 @@ class WP_Object_Cache {
 		global $blog_id, $table_prefix;
 
 		$this->global_prefix = '';
-		$this->blog_prefix =  '';
+		$this->blog_prefix   = '';
 
 		if ( function_exists( 'is_multisite' ) ) {
 			$this->global_prefix = ( is_multisite() || defined( 'CUSTOM_USER_TABLE' ) && defined( 'CUSTOM_USER_META_TABLE' ) ) ? '' : $table_prefix;
