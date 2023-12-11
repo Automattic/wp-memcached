@@ -6,15 +6,15 @@ Tested up to: 6.0
 Stable tag: 4.0.0
 Requires PHP: 7.4.0
 
-Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
+Use memcached (with the `d`) and the PECL memcache (without `d`) extension to provide a backing store for the WordPress object cache.
 
 == Description ==
-Memcached Object Cache provides a persistent backend for the WordPress object cache. A memcached server and the PECL memcache extension are required.
+Memcached Object Cache provides a persistent backend for the WordPress object cache. A memcached server (with the `d`) and the PECL memcache (without `d`) extension are required.
 
 == Installation ==
-1. Install [memcached](http://danga.com/memcached) on at least one server. Note the connection info. The default is `127.0.0.1:11211`.
+1. Install [memcached](http://danga.com/memcached) (with the `d`) on at least one server. Note the connection info. The default is `127.0.0.1:11211`.
 
-1. Install the [PECL memcache extension](http://pecl.php.net/package/memcache)
+1. Install the [PECL memcache extension](http://pecl.php.net/package/memcache) (without `d`).
 
 1. Copy object-cache.php to wp-content
 
@@ -80,6 +80,13 @@ users
 userslugs
 widget
 `
+
+= Why am I getting a `Class "Memcache" not found` error? =
+
+You need to install the [PECL memcache extension](http://pecl.php.net/package/memcache). Make sure it's `memcache` (no `d`) rather than `memcached` (with `d`).
+
+Make sure it's loaded in your `php.ini` and `php-cli.ini` files. It's a regular `extension` rather than a `zend_extension`.
+
 
 == Changelog ==
 
