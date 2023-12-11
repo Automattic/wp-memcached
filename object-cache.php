@@ -212,6 +212,13 @@ class WP_Object_Cache {
 	var $size_total = 0;
 	var $slow_op_microseconds = 0.005; // 5 ms
 
+	var $global_prefix = '';
+	var $blog_prefix   = '';
+	var $key_salt      = '';
+	var $cache_hits    = 0;
+	var $cache_misses  = 0;
+	var $time_start    = 0;
+
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
 		$key = $this->key( $id, $group );
 
