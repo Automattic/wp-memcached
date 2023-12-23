@@ -36,7 +36,8 @@ Add something similar to the following to wp-config.php above `/* That's all, st
 $memcached_servers = array(
 	'default' => array(
 		'10.10.10.20:11211',
-		'10.10.10.30:11211'
+		'10.10.10.30:11211',
+		'[::1]:11211
 	)
 );
 `
