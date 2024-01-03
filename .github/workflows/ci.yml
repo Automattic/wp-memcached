@@ -66,7 +66,7 @@ jobs:
           - "11212:11211"
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.5.2
 
       - name: Set up coverage reporting parameters
         id: coverage
