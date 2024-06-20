@@ -83,7 +83,7 @@ widget
 
 == Changelog ==
 
-= 4.1.0
+= 4.1.0 =
 * Add support for `wp_cache_(add|delete|get|set)_multiple()`
 * Add support for `wp_cache_flush_runtime()`
 * Add support for `wp_cache_supports()`
