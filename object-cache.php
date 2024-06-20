@@ -1082,11 +1082,25 @@ class WP_Object_Cache {
 					$node = $server;
 					$port = 0;
 				} else {
-					if ( false === strpos( $server, ':' ) ) {
-						$node = $server;
-						$port = ini_get( 'memcache.default_port' );
+					// [::1]:11211
+					// [::1]
+					if ( false !== strpos( $server, ']' ) ) {
+						if ( false === strpos( $server, ']:' ) ) {
+							$node = $server;
+							$port = ini_get( 'memcache.default_port' );
+						} else {
+							list ( $node, $port ) = explode( ']:', $server, 2 );
+							$node .= "]";
+						}
+					// 127.0.0.1:11211
+					// 127.0.0.1
 					} else {
-						list ( $node, $port ) = explode( ':', $server, 2 );
+						if ( false === strpos( $server, ':' ) ) {
+							$node = $server;
+							$port = ini_get( 'memcache.default_port' );
+						} else {
+							list ( $node, $port ) = explode( ':', $server, 2 );
+						}
 					}
 
 					$port = intval( $port );
