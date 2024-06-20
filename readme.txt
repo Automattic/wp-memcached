@@ -1,9 +1,9 @@
 === Memcached Object Cache ===
-Contributors: ryan, sivel, andy, nacin, barry, ethitter, nickdaugherty, batmoo, simonwheatley, jenkoian, bor0, aidvu
+Contributors: ryan, sivel, andy, nacin, barry, ethitter, nickdaugherty, batmoo, simonwheatley, jenkoian, bor0, aidvu, dd32
 Tags: cache, memcached
 Requires at least: 5.3
-Tested up to: 6.0
-Stable tag: 4.0.0
+Tested up to: 6.5
+Stable tag: 4.1.0
 Requires PHP: 7.4.0
 
 Use memcached and the PECL memcache extension to provide a backing store for the WordPress object cache.
@@ -82,6 +82,14 @@ widget
 `
 
 == Changelog ==
+
+= 4.1.0 =
+* Add support for `wp_cache_(add|delete|get|set)_multiple()`
+* Add support for `wp_cache_flush_runtime()`
+* Add support for `wp_cache_supports()`
+* PHP 8.2 compatibility fixes
+* Increase minimum PHP requirement to 7.4
+* Bump WP tested-up-to to 6.5
 
 = 4.0.0 =
 * Add preemptive filter pre_wp_cache_get
