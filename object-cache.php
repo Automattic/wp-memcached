@@ -477,7 +477,7 @@ class WP_Object_Cache {
 
 		$this->rotate_site_keys( $flush_number );
 
-		if ( is_main_site() ) {
+		if ( function_exists( 'is_main_site' ) && is_main_site() ) {
 			$this->rotate_global_keys( $flush_number );
 		}
 
