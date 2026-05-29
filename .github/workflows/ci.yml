@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@2.24.0
+        uses: shivammathur/setup-php@2.37.1
         with:
           coverage: ${{ steps.coverage.outputs.coverage }}
           php-version: ${{ matrix.config.php }}
@@ -92,6 +92,9 @@ jobs:
 
       - name: Install PHP Dependencies
         uses: ramsey/composer-install@2.2.0
+
+      - name: Install SVN
+        run: sudo apt-get update && sudo apt-get install -y subversion
 
       - name: Set up WordPress and WordPress Test Library
         uses: sjinks/setup-wordpress-test-library@1.1.14
