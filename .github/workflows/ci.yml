@@ -91,7 +91,7 @@ jobs:
           chmod +x /usr/local/bin/phpunit
 
       - name: Install PHP Dependencies
-        uses: ramsey/composer-install@83af392bf5f031813d25e6fe4cd626cdba9a2df6 # 2.2.0
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
 
       - name: Install SVN
         run: sudo apt-get update && sudo apt-get install -y subversion
