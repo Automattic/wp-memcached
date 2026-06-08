@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@2.37.1
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # 2.37.1
         with:
           coverage: ${{ steps.coverage.outputs.coverage }}
           php-version: ${{ matrix.config.php }}
@@ -91,13 +91,13 @@ jobs:
           chmod +x /usr/local/bin/phpunit
 
       - name: Install PHP Dependencies
-        uses: ramsey/composer-install@2.2.0
+        uses: ramsey/composer-install@83af392bf5f031813d25e6fe4cd626cdba9a2df6 # 2.2.0
 
       - name: Install SVN
         run: sudo apt-get update && sudo apt-get install -y subversion
 
       - name: Set up WordPress and WordPress Test Library
-        uses: sjinks/setup-wordpress-test-library@1.1.14
+        uses: sjinks/setup-wordpress-test-library@598ab5e6993bb1ceea77393f8020e034772719d2 # 1.1.14
         with:
           version: ${{ matrix.config.wp }}
 
@@ -121,7 +121,7 @@ jobs:
           MEMCACHED_HOST_2: 127.0.0.1:11212
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
         with:
           files: coverage/clover.xml
           flags: unittests
