@@ -727,7 +727,13 @@ class WP_Object_Cache {
 			$prefix .= $this->blog_prefix;
 		}
 
-		return preg_replace( '/\s+/', '', "$prefix:$group:$key" );
+		$trimmed = preg_replace( '/\s+/', '', "$prefix:$group:$key" );
+		if ( strlen( $trimmed ) <= 250 ) {
+			return $trimmed;
+		}
+
+		$trimmed = substr( $trimmed, 0, 200 ) . ':redacted:' . md5( $trimmed );
+		return $trimmed;
 	}
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
