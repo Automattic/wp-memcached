@@ -577,6 +577,45 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertTrue( $found );
 	}
 
+	public function test_whitespace_keys_store_and_return_distinct_values(): void {
+		$this->object_cache->set( 'foobar', 'one' );
+		$this->object_cache->set( 'foo bar', 'two' );
+
+		// Keys that differ only by whitespace must not clobber each other.
+		$this->assertEquals( 'one', $this->object_cache->get( 'foobar', 'default', true ) );
+		$this->assertEquals( 'two', $this->object_cache->get( 'foo bar', 'default', true ) );
+	}
+
+	public function test_whitespace_keys_are_isolated_across_groups(): void {
+		$this->object_cache->set( 'foo bar', 'default-value', 'default' );
+		$this->object_cache->set( 'foo bar', 'group-value', 'another-group' );
+
+		// The same whitespace key in different groups must stay isolated.
+		$this->assertEquals( 'default-value', $this->object_cache->get( 'foo bar', 'default', true ) );
+		$this->assertEquals( 'group-value', $this->object_cache->get( 'foo bar', 'another-group', true ) );
+	}
+
+	public function test_long_keys_store_and_return_distinct_values(): void {
+		$key_one = str_repeat( 'a', 300 );
+		$key_two = str_repeat( 'a', 299 ) . 'b';
+
+		$this->object_cache->set( $key_one, 'one' );
+		$this->object_cache->set( $key_two, 'two' );
+
+		// Over-length keys are hashed but must still round-trip distinctly.
+		$this->assertEquals( 'one', $this->object_cache->get( $key_one, 'default', true ) );
+		$this->assertEquals( 'two', $this->object_cache->get( $key_two, 'default', true ) );
+	}
+
+	public function test_control_character_keys_store_and_return_correct_value(): void {
+		$key = "foo\tbar\nbaz";
+
+		$this->object_cache->set( $key, 'data' );
+
+		// Keys with control characters are hashed but must still round-trip.
+		$this->assertEquals( 'data', $this->object_cache->get( $key, 'default', true ) );
+	}
+
 	// Test for get_multi.
 
 	public function test_get_multi_returns_array_of_values_from_memcache(): void {
@@ -804,6 +843,38 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		// Have to set blog prefix here as without multi site it is set to the same value as global prefix.
 		$this->object_cache->blog_prefix = 'blog_prefix';
 		$this->assertStringContainsString( $this->object_cache->blog_prefix, $this->object_cache->key( 'foo', 'non-global-group') );
+	}
+
+	public function test_key_is_hashed_when_necessary(): void {
+		$key = $this->object_cache->key( 'foo bar', 'default' );
+
+		// A key containing whitespace must hash its tail so memcached accepts it.
+		$this->assertStringContainsString( ':h:', $key );
+		$this->assertDoesNotMatchRegularExpression( '/[\s\x00-\x1f\x7f]/', $key );
+	}
+
+	public function test_unhashed_keys_are_left_untouched(): void {
+		$key = $this->object_cache->key( 'foo', 'default' );
+
+		// Well-formed keys should pass through without being hashed.
+		$this->assertStringNotContainsString( ':h:', $key );
+		$this->assertStringContainsString( 'default:foo', $key );
+	}
+
+	public function test_hashed_keys_avoid_collisions(): void {
+		$key_one = $this->object_cache->key( 'foo bar', 'default' );
+		$key_two = $this->object_cache->key( 'foo  bar', 'default' );
+
+		// Distinct source keys must not collapse to the same hashed key.
+		$this->assertNotEquals( $key_one, $key_two );
+	}
+
+	public function test_hashed_keys_are_namespaced_by_group(): void {
+		$default_group = $this->object_cache->key( 'foo bar', 'default' );
+		$other_group   = $this->object_cache->key( 'foo bar', 'another-group' );
+
+		// Hashing the group with the key name keeps groups from colliding.
+		$this->assertNotEquals( $default_group, $other_group );
 	}
 
 	// Tests for replace.
