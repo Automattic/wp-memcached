@@ -859,7 +859,8 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$key = $this->object_cache->key( 'foo bar', 'default' );
 
 		// A key containing whitespace must hash its tail so memcached accepts it.
-		$this->assertStringContainsString( ':h:', $key );
+		// Hashed keys end in the colon-free marker 'h' + 32 hex chars.
+		$this->assertMatchesRegularExpression( '/:h[0-9a-f]{32}$/', $key );
 		$this->assertDoesNotMatchRegularExpression( '/[\s\x00-\x1f\x7f]/', $key );
 	}
 
@@ -867,7 +868,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$key = $this->object_cache->key( 'foo', 'default' );
 
 		// Well-formed keys should pass through without being hashed.
-		$this->assertStringNotContainsString( ':h:', $key );
+		$this->assertDoesNotMatchRegularExpression( '/:h[0-9a-f]{32}$/', $key );
 		$this->assertStringContainsString( 'default:foo', $key );
 	}
 
@@ -890,14 +891,14 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	public function test_unhashed_key_cannot_masquerade_as_hashed_key(): void {
 		$hex_name = md5( 'anything' );
 
-		// A caller using group 'h' with a hex-like key name would otherwise
-		// produce the exact shape of a tail-hashed key (prefix:h:<32 hex>).
-		// Reserving the 'h:' marker forces it down the hash path so the raw name
-		// is never emitted verbatim and the two namespaces stay disjoint.
+		// A caller using group 'h' with a hex-like key name produces a readable
+		// key (prefix:h:<hex>). Because the hash marker is colon-free, the ':'
+		// the shape injects between $group and $key means this can never match a
+		// genuinely hashed key (prefix:h<hex>), so the namespaces stay disjoint.
 		$masquerade = $this->object_cache->key( $hex_name, 'h' );
 
-		$this->assertStringContainsString( ':h:', $masquerade );
-		$this->assertStringNotContainsString( ':h:' . $hex_name, $masquerade );
+		$this->assertStringContainsString( ':h:' . $hex_name, $masquerade );
+		$this->assertDoesNotMatchRegularExpression( '/:h[0-9a-f]{32}$/', $masquerade );
 	}
 
 	// Tests for replace.

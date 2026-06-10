@@ -737,20 +737,17 @@ class WP_Object_Cache {
 		// and the vast majority of keys are unchanged. Hashing $group along with
 		// the key name keeps distinct groups from colliding.
 		//
-		// We also reserve the 'h:' marker: a caller-supplied tail that already
-		// begins with 'h:' (e.g. group 'h' with a hex-like key name) is hashed so
-		// an unhashed key can never take the shape of a hashed one. This keeps the
+		// The hash marker is colon-free ('h' + 32 hex chars). The readable form
+		// always injects a ':' between $group and $key, so the segment following
+		// the prefix always contains a ':'. A colon-free hash segment therefore
+		// cannot be produced by the $prefix:$group:$key shape, which keeps the
 		// hashed and unhashed key namespaces provably disjoint.
-		if (
-			strlen( $full_key ) > 250
-			|| preg_match( '/[\s\x00-\x1f\x7f]/', $full_key )
-			|| 0 === strpos( $tail, 'h:' )
-		) {
-			$key = $prefix . ':h:' . md5( $tail );
+		if ( strlen( $full_key ) > 250 || preg_match( '/[\s\x00-\x1f\x7f]/', $full_key ) ) {
+			$key = $prefix . ':h' . md5( $tail );
 
 			// If the prefix itself makes the key invalid/too long, hash everything.
 			if ( strlen( $key ) > 250 || preg_match( '/[\s\x00-\x1f\x7f]/', $key ) ) {
-				$key = 'h:' . md5( $full_key );
+				$key = 'h' . md5( $full_key );
 			}
 		} else {
 			$key = $full_key;
