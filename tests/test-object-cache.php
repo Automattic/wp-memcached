@@ -608,7 +608,7 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	}
 
 	public function test_control_character_keys_store_and_return_correct_value(): void {
-		$key = "foo\tbar\nbaz";
+		$key = "foo\x01bar\x7fbaz";
 
 		$this->object_cache->set( $key, 'data' );
 
