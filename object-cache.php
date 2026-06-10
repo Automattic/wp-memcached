@@ -736,7 +736,16 @@ class WP_Object_Cache {
 		// Hash only the untrusted tail so the readable, namespaced prefix is kept
 		// and the vast majority of keys are unchanged. Hashing $group along with
 		// the key name keeps distinct groups from colliding.
-		if ( strlen( $full_key ) > 250 || preg_match( '/[\s\x00-\x1f\x7f]/', $full_key ) ) {
+		//
+		// We also reserve the 'h:' marker: a caller-supplied tail that already
+		// begins with 'h:' (e.g. group 'h' with a hex-like key name) is hashed so
+		// an unhashed key can never take the shape of a hashed one. This keeps the
+		// hashed and unhashed key namespaces provably disjoint.
+		if (
+			strlen( $full_key ) > 250
+			|| preg_match( '/[\s\x00-\x1f\x7f]/', $full_key )
+			|| 0 === strpos( $tail, 'h:' )
+		) {
 			$key = $prefix . ':h:' . md5( $tail );
 
 			// If the prefix itself makes the key invalid/too long, hash everything.

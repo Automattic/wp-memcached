@@ -616,6 +616,16 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertEquals( 'data', $this->object_cache->get( $key, 'default', true ) );
 	}
 
+	public function test_hashed_and_unhashed_keys_do_not_collide(): void {
+		// A whitespace key is hashed; an unhashed key crafted to mimic the hashed
+		// shape (group 'h' + hex name) must not read or clobber its value.
+		$this->object_cache->set( 'foo bar', 'hashed-value', 'default' );
+		$this->object_cache->set( md5( 'foo bar' ), 'masquerade-value', 'h' );
+
+		$this->assertEquals( 'hashed-value', $this->object_cache->get( 'foo bar', 'default', true ) );
+		$this->assertEquals( 'masquerade-value', $this->object_cache->get( md5( 'foo bar' ), 'h', true ) );
+	}
+
 	// Test for get_multi.
 
 	public function test_get_multi_returns_array_of_values_from_memcache(): void {
@@ -875,6 +885,19 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		// Hashing the group with the key name keeps groups from colliding.
 		$this->assertNotEquals( $default_group, $other_group );
+	}
+
+	public function test_unhashed_key_cannot_masquerade_as_hashed_key(): void {
+		$hex_name = md5( 'anything' );
+
+		// A caller using group 'h' with a hex-like key name would otherwise
+		// produce the exact shape of a tail-hashed key (prefix:h:<32 hex>).
+		// Reserving the 'h:' marker forces it down the hash path so the raw name
+		// is never emitted verbatim and the two namespaces stay disjoint.
+		$masquerade = $this->object_cache->key( $hex_name, 'h' );
+
+		$this->assertStringContainsString( ':h:', $masquerade );
+		$this->assertStringNotContainsString( ':h:' . $hex_name, $masquerade );
 	}
 
 	// Tests for replace.
