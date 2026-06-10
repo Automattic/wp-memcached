@@ -729,15 +729,22 @@ class WP_Object_Cache {
 
 		// The prefix is machine-generated and safe; only $group and the key name
 		// come from the caller and may contain whitespace/control chars.
-		$tail = $group . ':' . $key;
-		$key  = $prefix . ':' . $tail;
+		$tail     = $group . ':' . $key;
+		$full_key = $prefix . ':' . $tail;
 
 		// Memcached forbids whitespace/control chars and caps keys at 250 bytes.
 		// Hash only the untrusted tail so the readable, namespaced prefix is kept
 		// and the vast majority of keys are unchanged. Hashing $group along with
 		// the key name keeps distinct groups from colliding.
-		if ( strlen( $key ) > 250 || preg_match( '/[\s\x00-\x1f\x7f]/', $tail ) ) {
+		if ( strlen( $full_key ) > 250 || preg_match( '/[\s\x00-\x1f\x7f]/', $full_key ) ) {
 			$key = $prefix . ':h:' . md5( $tail );
+
+			// If the prefix itself makes the key invalid/too long, hash everything.
+			if ( strlen( $key ) > 250 || preg_match( '/[\s\x00-\x1f\x7f]/', $key ) ) {
+				$key = 'h:' . md5( $full_key );
+			}
+		} else {
+			$key = $full_key;
 		}
 
 		return $key;
