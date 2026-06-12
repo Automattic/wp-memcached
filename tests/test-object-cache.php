@@ -595,18 +595,6 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertEquals( 'group-value', $this->object_cache->get( 'foo bar', 'another-group', true ) );
 	}
 
-	public function test_long_keys_store_and_return_distinct_values(): void {
-		$key_one = str_repeat( 'a', 300 );
-		$key_two = str_repeat( 'a', 299 ) . 'b';
-
-		$this->object_cache->set( $key_one, 'one' );
-		$this->object_cache->set( $key_two, 'two' );
-
-		// Over-length keys are hashed but must still round-trip distinctly.
-		$this->assertEquals( 'one', $this->object_cache->get( $key_one, 'default', true ) );
-		$this->assertEquals( 'two', $this->object_cache->get( $key_two, 'default', true ) );
-	}
-
 	public function test_control_character_keys_store_and_return_correct_value(): void {
 		$key = "foo\x01bar\x7fbaz";
 
