@@ -21,7 +21,7 @@ Memcached Object Cache provides a persistent backend for the WordPress object ca
 1. Add the `WP_CACHE_KEY_SALT` constant to the `wp-config.php`:
 
 ```php
-define( 'WP_CACHE_KEY_SALT', '...long random string...' );
+define( 'WP_CACHE_KEY_SALT', 'cache-key-prefix:terminated-by:' );
 ```
 
 This helps prevent cache pollution when multiplte WordPress installs are using the same Memcached server. The value must be unique for each WordPress install.
