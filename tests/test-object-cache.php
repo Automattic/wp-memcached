@@ -1039,6 +1039,24 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertEmpty( $this->object_cache->key_salt );
 	}
 
+	public function test_key_salt_strips_characters_memcached_forbids(): void {
+		$this->object_cache->salt_keys( " fo o\tbar\n" );
+		$this->assertEquals( 'foobar:', $this->object_cache->key_salt );
+
+		// A salt made up entirely of forbidden characters leaves the keys unsalted.
+		$this->object_cache->salt_keys( "  \t" );
+		$this->assertEmpty( $this->object_cache->key_salt );
+	}
+
+	public function test_key_is_valid_when_salt_contains_whitespace(): void {
+		$this->object_cache->salt_keys( 'salt with spaces' );
+
+		$key = $this->object_cache->key( 'foo', 'default' );
+
+		$this->assertStringStartsWith( 'saltwithspaces:', $key );
+		$this->assertDoesNotMatchRegularExpression( '/[\s\x00-\x1f\x7f]/', $key );
+	}
+
 	/**
 	 * @see https://github.com/Automattic/wp-memcached/issues/40
 	 */

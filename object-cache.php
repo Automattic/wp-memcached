@@ -1074,6 +1074,13 @@ class WP_Object_Cache {
 	}
 
 	function salt_keys( $key_salt ) {
+		// `key()` only inspects the caller-supplied portion of a key, so the salt is
+		// sanitized here to keep the generated prefix free of the whitespace and
+		// control characters memcached forbids. Stripping whitespace also keeps the
+		// keys identical to those produced before hashing was introduced, when
+		// whitespace was stripped from the whole key.
+		$key_salt = preg_replace( '/[\s\x00-\x1f\x7f]+/', '', $key_salt );
+
 		if ( strlen( $key_salt ) ) {
 			$this->key_salt = $key_salt . ':';
 		} else {
