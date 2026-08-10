@@ -1040,12 +1040,13 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 	}
 
 	public function test_key_salt_strips_characters_memcached_forbids(): void {
-		$this->object_cache->salt_keys( " fo o\tbar\n" );
+		$this->object_cache->salt_keys( " fo o\tb\x01ar\x7f\n" );
 		$this->assertEquals( 'foobar:', $this->object_cache->key_salt );
 
-		// A salt made up entirely of forbidden characters leaves the keys unsalted.
+		// A non-empty salt made up entirely of forbidden characters keeps the ':'
+		// separator so the key namespace matches pre-hashing behavior.
 		$this->object_cache->salt_keys( "  \t" );
-		$this->assertEmpty( $this->object_cache->key_salt );
+		$this->assertEquals( ':', $this->object_cache->key_salt );
 	}
 
 	public function test_key_is_valid_when_salt_contains_whitespace(): void {

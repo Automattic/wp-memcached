@@ -1079,10 +1079,12 @@ class WP_Object_Cache {
 		// control characters memcached forbids. Stripping whitespace also keeps the
 		// keys identical to those produced before hashing was introduced, when
 		// whitespace was stripped from the whole key.
-		$key_salt = preg_replace( '/[\s\x00-\x1f\x7f]+/', '', $key_salt );
+		$sanitized_key_salt = preg_replace( '/[\s\x00-\x1f\x7f]+/', '', $key_salt );
 
+		// Branch on the original salt so an all-whitespace salt keeps its ':' separator,
+		// preserving the key namespace produced before hashing was introduced.
 		if ( strlen( $key_salt ) ) {
-			$this->key_salt = $key_salt . ':';
+			$this->key_salt = $sanitized_key_salt . ':';
 		} else {
 			$this->key_salt = '';
 		}
