@@ -577,6 +577,43 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertTrue( $found );
 	}
 
+	public function test_whitespace_keys_store_and_return_distinct_values(): void {
+		$this->object_cache->set( 'foobar', 'one' );
+		$this->object_cache->set( 'foo bar', 'two' );
+
+		// Keys that differ only by whitespace must not clobber each other.
+		$this->assertEquals( 'one', $this->object_cache->get( 'foobar', 'default', true ) );
+		$this->assertEquals( 'two', $this->object_cache->get( 'foo bar', 'default', true ) );
+	}
+
+	public function test_whitespace_keys_are_isolated_across_groups(): void {
+		$this->object_cache->set( 'foo bar', 'default-value', 'default' );
+		$this->object_cache->set( 'foo bar', 'group-value', 'another-group' );
+
+		// The same whitespace key in different groups must stay isolated.
+		$this->assertEquals( 'default-value', $this->object_cache->get( 'foo bar', 'default', true ) );
+		$this->assertEquals( 'group-value', $this->object_cache->get( 'foo bar', 'another-group', true ) );
+	}
+
+	public function test_control_character_keys_store_and_return_correct_value(): void {
+		$key = "foo\x01bar\x7fbaz";
+
+		$this->object_cache->set( $key, 'data' );
+
+		// Keys with control characters are hashed but must still round-trip.
+		$this->assertEquals( 'data', $this->object_cache->get( $key, 'default', true ) );
+	}
+
+	public function test_hashed_and_unhashed_keys_do_not_collide(): void {
+		// A whitespace key is hashed; an unhashed key crafted to mimic the hashed
+		// shape (group 'h' + hex name) must not read or clobber its value.
+		$this->object_cache->set( 'foo bar', 'hashed-value', 'default' );
+		$this->object_cache->set( md5( 'foo bar' ), 'masquerade-value', 'h' );
+
+		$this->assertEquals( 'hashed-value', $this->object_cache->get( 'foo bar', 'default', true ) );
+		$this->assertEquals( 'masquerade-value', $this->object_cache->get( md5( 'foo bar' ), 'h', true ) );
+	}
+
 	// Test for get_multi.
 
 	public function test_get_multi_returns_array_of_values_from_memcache(): void {
@@ -806,6 +843,52 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 		$this->assertStringContainsString( $this->object_cache->blog_prefix, $this->object_cache->key( 'foo', 'non-global-group') );
 	}
 
+	public function test_key_is_hashed_when_necessary(): void {
+		$key = $this->object_cache->key( 'foo bar', 'default' );
+
+		// A key containing whitespace must hash its tail so memcached accepts it.
+		// Hashed keys end in the colon-free marker 'h' + 32 hex chars.
+		$this->assertMatchesRegularExpression( '/:h[0-9a-f]{32}$/', $key );
+		$this->assertDoesNotMatchRegularExpression( '/[\s\x00-\x1f\x7f]/', $key );
+	}
+
+	public function test_unhashed_keys_are_left_untouched(): void {
+		$key = $this->object_cache->key( 'foo', 'default' );
+
+		// Well-formed keys should pass through without being hashed.
+		$this->assertDoesNotMatchRegularExpression( '/:h[0-9a-f]{32}$/', $key );
+		$this->assertStringContainsString( 'default:foo', $key );
+	}
+
+	public function test_hashed_keys_avoid_collisions(): void {
+		$key_one = $this->object_cache->key( 'foo bar', 'default' );
+		$key_two = $this->object_cache->key( 'foo  bar', 'default' );
+
+		// Distinct source keys must not collapse to the same hashed key.
+		$this->assertNotEquals( $key_one, $key_two );
+	}
+
+	public function test_hashed_keys_are_namespaced_by_group(): void {
+		$default_group = $this->object_cache->key( 'foo bar', 'default' );
+		$other_group   = $this->object_cache->key( 'foo bar', 'another-group' );
+
+		// Hashing the group with the key name keeps groups from colliding.
+		$this->assertNotEquals( $default_group, $other_group );
+	}
+
+	public function test_unhashed_key_cannot_masquerade_as_hashed_key(): void {
+		$hex_name = md5( 'anything' );
+
+		// A caller using group 'h' with a hex-like key name produces a readable
+		// key (prefix:h:<hex>). Because the hash marker is colon-free, the ':'
+		// the shape injects between $group and $key means this can never match a
+		// genuinely hashed key (prefix:h<hex>), so the namespaces stay disjoint.
+		$masquerade = $this->object_cache->key( $hex_name, 'h' );
+
+		$this->assertStringContainsString( ':h:' . $hex_name, $masquerade );
+		$this->assertDoesNotMatchRegularExpression( '/:h[0-9a-f]{32}$/', $masquerade );
+	}
+
 	// Tests for replace.
 
 	public function test_replace_update_value_in_memcache(): void {
@@ -954,6 +1037,25 @@ class Test_WP_Object_Cache extends WP_UnitTestCase {
 
 		$this->object_cache->salt_keys( '' );
 		$this->assertEmpty( $this->object_cache->key_salt );
+	}
+
+	public function test_key_salt_strips_characters_memcached_forbids(): void {
+		$this->object_cache->salt_keys( " fo o\tb\x01ar\x7f\n" );
+		$this->assertEquals( 'foobar:', $this->object_cache->key_salt );
+
+		// A non-empty salt made up entirely of forbidden characters keeps the ':'
+		// separator so the key namespace matches pre-hashing behavior.
+		$this->object_cache->salt_keys( "  \t" );
+		$this->assertEquals( ':', $this->object_cache->key_salt );
+	}
+
+	public function test_key_is_valid_when_salt_contains_whitespace(): void {
+		$this->object_cache->salt_keys( 'salt with spaces' );
+
+		$key = $this->object_cache->key( 'foo', 'default' );
+
+		$this->assertStringStartsWith( 'saltwithspaces:', $key );
+		$this->assertDoesNotMatchRegularExpression( '/[\s\x00-\x1f\x7f]/', $key );
 	}
 
 	/**

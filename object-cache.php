@@ -727,7 +727,29 @@ class WP_Object_Cache {
 			$prefix .= $this->blog_prefix;
 		}
 
-		return preg_replace( '/\s+/', '', "$prefix:$group:$key" );
+		// The prefix is machine-generated and safe; only $group and the key name
+		// come from the caller and may contain whitespace/control chars.
+		$tail     = $group . ':' . $key;
+		$full_key = $prefix . ':' . $tail;
+
+		// Memcached forbids whitespace and control characters in keys. Only the
+		// caller-supplied $tail can contain them, so hash the tail when it does;
+		// the readable, namespaced prefix is preserved and well-formed keys pass
+		// through untouched. Hashing $group along with the key name keeps distinct
+		// groups from colliding.
+		//
+		// The hash marker is colon-free ('h' + 32 hex chars). The readable form
+		// always injects a ':' between $group and $key, so the segment following
+		// the prefix always contains a ':'. A colon-free hash segment therefore
+		// cannot be produced by the $prefix:$group:$key shape, which keeps the
+		// hashed and unhashed key namespaces provably disjoint.
+		if ( preg_match( '/[\s\x00-\x1f\x7f]/', $tail ) ) {
+			$key = $prefix . ':h' . md5( $tail );
+		} else {
+			$key = $full_key;
+		}
+
+		return $key;
 	}
 
 	function replace( $id, $data, $group = 'default', $expire = 0 ) {
@@ -1052,8 +1074,17 @@ class WP_Object_Cache {
 	}
 
 	function salt_keys( $key_salt ) {
+		// `key()` only inspects the caller-supplied portion of a key, so the salt is
+		// sanitized here to keep the generated prefix free of the whitespace and
+		// control characters memcached forbids. Stripping whitespace also keeps the
+		// keys identical to those produced before hashing was introduced, when
+		// whitespace was stripped from the whole key.
+		$sanitized_key_salt = preg_replace( '/[\s\x00-\x1f\x7f]+/', '', $key_salt );
+
+		// Branch on the original salt so an all-whitespace salt keeps its ':' separator,
+		// preserving the key namespace produced before hashing was introduced.
 		if ( strlen( $key_salt ) ) {
-			$this->key_salt = $key_salt . ':';
+			$this->key_salt = $sanitized_key_salt . ':';
 		} else {
 			$this->key_salt = '';
 		}
