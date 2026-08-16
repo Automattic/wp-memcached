@@ -215,6 +215,11 @@ class WP_Object_Cache {
 	var $slow_op_microseconds = 0.005; // 5 ms
 
 	function add( $id, $data, $group = 'default', $expire = 0 ) {
+		if (!class_exists("MemCache")) {
+			$value = false;
+			return $value;
+		}
+
 		$key = $this->key( $id, $group );
 
 		if ( is_object( $data ) ) {
@@ -339,6 +344,11 @@ class WP_Object_Cache {
 	}
 
 	function delete( $id, $group = 'default' ) {
+		if (!class_exists("MemCache")) {
+			$value = false;
+			return $value;
+		}
+
 		$key = $this->key( $id, $group );
 
 		if ( in_array( $group, $this->no_mc_groups ) ) {
@@ -509,6 +519,12 @@ class WP_Object_Cache {
 	}
 
 	function get( $id, $group = 'default', $force = false, &$found = null ) {
+
+		if (!class_exists("MemCache")) {
+			$value = false;
+			return $value;
+		}
+
 		$key = $this->key( $id, $group );
 		$mc = $this->get_mc( $group );
 		$found = true;
@@ -650,6 +666,18 @@ class WP_Object_Cache {
 	}
 
 	public function get_multiple( $keys, $group = 'default', $force = false ) {
+
+		if (!class_exists("MemCache")) {
+			$return_cache  = array();
+			$return        = array();
+
+			foreach ( $keys as $id ) {
+				$value = false;
+				$return[ $id ]        = $value;
+			}
+			return $return;
+		}
+
 		$mc = $this->get_mc( $group );
 
 		$no_mc = in_array( $group, $this->no_mc_groups, true );
@@ -781,6 +809,10 @@ class WP_Object_Cache {
 	}
 
 	function set( $id, $data, $group = 'default', $expire = 0 ) {
+		if (!class_exists("MemCache")) {
+			return false;
+		}
+
 		$key = $this->key( $id, $group );
 
 		if ( isset( $this->cache[ $key ] ) && ( 'checkthedatabaseplease' === $this->cache[ $key ][ 'value' ] ) ) {
@@ -1092,6 +1124,10 @@ class WP_Object_Cache {
 
 	function __construct() {
 		global $memcached_servers;
+
+		if (!class_exists("MemCache")) {
+			return;
+		}
 
 		if ( isset( $memcached_servers ) ) {
 			$buckets = $memcached_servers;
