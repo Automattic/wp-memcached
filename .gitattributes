@@ -1,0 +1,7 @@
+# Files not needed to be distributed in ZIP packages.
+/.github/         export-ignore
+/bin/             export-ignore
+/tests/           export-ignore
+/.*               export-ignore
+/composer.json    export-ignore
+/phpunit.xml      export-ignore
